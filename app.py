@@ -29,52 +29,69 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 상단 공백 제거 및 화면 크기에 따른 자동 비율 조절 CSS
+# 상단 공백 제거 및 모바일 가로 넘침 방지 CSS
 st.markdown("""
     <style>
     .block-container {
         padding-top: 2rem !important;
         padding-bottom: 3rem !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
-    /* 화면 크기에 맞춰 자동으로 유연하게 줄어들도록 Flexbox 설정 강화 */
-    [data-testid="stHorizontalBlock"] {
+    .stApp {
+        overflow-x: hidden !important;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    /* 입력 폼이 화면 밖으로 튀어나가지 않도록 제한 */
+    .stForm, div[data-testid="stForm"] {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* 오직 재료 목록 행(.row-wrapper) 내부만 한 줄 고정 및 자동 비율 조절 */
+    div.row-wrapper [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
         width: 100% !important;
-        gap: 4px !important;
+        box-sizing: border-box !important;
+        gap: 2px !important;
     }
-    [data-testid="column"] {
+    div.row-wrapper [data-testid="column"] {
         flex: 1 1 0 !important;
         min-width: 0 !important;
+        box-sizing: border-box !important;
     }
-    /* 긴 텍스트가 화면 밖으로 넘치지 않고 말줄임표 처리되도록 설정 */
+    
+    /* 텍스트가 길 경우 말줄임표 처리 */
     .truncate-text {
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
+        display: block !important;
+        width: 100% !important;
     }
+    
     /* 버튼 스타일 조정 */
-    div[data-testid="stHorizontalBlock"] button {
+    div.row-wrapper button {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
         outline: none !important;
         padding: 0px !important;
-        font-size: 0.95rem !important;
+        font-size: 0.9rem !important;
+        min-height: unset !important;
+        height: auto !important;
     }
-    div[data-testid="stHorizontalBlock"] button:hover {
+    div.row-wrapper button:hover {
         background-color: rgba(0, 0, 0, 0.05) !important;
-    }
-    .stApp {
-        max-width: 700px;
-        margin: 0 auto;
     }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("화면 크기에 따라 자동으로 비율이 조절되는 스마트 냉장고 관리 앱입니다.")
+st.write("스마트폰 화면에 최적화된 스마트 냉장고 관리 앱입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -260,18 +277,20 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # 화면 비율에 따라 유연하게 줄어들도록 가중치 부여 (합계: 3.0 + 1.5 + 1.2 + 0.6)
+                                # row-wrapper로 감싸서 해당 목록 줄만 한 줄 고정 및 자동 비율 적용
+                                st.markdown("<div class='row-wrapper'>", unsafe_allow_html=True)
                                 r_c1, r_c2, r_c3, r_c4 = st.columns([3.0, 1.5, 1.2, 0.6])
                                 
                                 with r_c1:
-                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.9rem; font-weight: bold;'>{current_ing}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.85rem; font-weight: bold;'>{current_ing}</div>", unsafe_allow_html=True)
                                 with r_c2:
-                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.75rem; color: #666;'>{short_date}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.7rem; color: #666;'>{short_date}</div>", unsafe_allow_html=True)
                                 with r_c3:
-                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.75rem; color: #e67e22; font-weight: bold;'>{days_label}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.7rem; color: #e67e22; font-weight: bold;'>{days_label}</div>", unsafe_allow_html=True)
                                 with r_c4:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
+                                st.markdown("</div>", unsafe_allow_html=True)
                                         
                                 st.markdown("<hr style='margin: 3px 0px; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
                         else:
