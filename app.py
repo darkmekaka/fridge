@@ -83,45 +83,12 @@ st.markdown("""
     }
     
     .fridge-row {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        align-items: center;
         border-radius: 10px;
-        padding: 10px 12px;
-        margin-bottom: 6px;
+        padding: 4px 8px;
+        margin-bottom: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         width: 100%;
         box-sizing: border-box;
-    }
-    
-    .col-name {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-weight: bold;
-        color: #222;
-    }
-    
-    .col-date {
-        flex: 0 0 75px;
-        width: 75px;
-        text-align: center;
-        font-size: 0.9rem;
-        color: #555;
-        white-space: nowrap;
-    }
-    
-    .col-days {
-        flex: 0 0 55px;
-        width: 55px;
-        text-align: right;
-        font-size: 0.9rem;
-        color: #e67e22;
-        font-weight: bold;
-        white-space: nowrap;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -146,8 +113,8 @@ if "web_app_url" not in st.session_state:
     st.session_state.web_app_url = default_gas_url
 if "saved_groq_key" not in st.session_state:
     st.session_state.saved_groq_key = default_groq_key
-if "dialog_data" not in st.session_state:
-    st.session_state.dialog_data = None
+if "dialog_target" not in st.session_state:
+    st.session_state.dialog_target = None
 
 # 사이드바: 설정 변경 메뉴
 with st.sidebar.expander("🔧 설정 변경 (필요한 경우만)", expanded=False):
@@ -193,7 +160,7 @@ def send_post_request(url, payload):
         st.error(f"서버 통신 중 오류 발생: {e}")
         return None
 
-# 중앙 팝업 모달 함수 (안전하게 분리됨)
+# 중앙 팝업 모달 함수
 @st.dialog("⚙️ 품목 상세 관리")
 def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, clean_expiry_str, web_url):
     st.write(f"**[{current_ing}]**의 정보 및 유통기한을 관리합니다.")
@@ -217,11 +184,13 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, cl
         cat_index = categories_list.index(current_cat) if current_cat in categories_list else 0
         edit_cat_val = st.selectbox("분류 변경", categories_list, index=cat_index)
         
-        col_btn1, col_btn2 = st.columns(2)
+        col_btn1, col_btn2, col_btn3 = st.columns(3)
         with col_btn1:
-            save_clicked = st.form_submit_button("💾 수정 저장", use_container_width=True)
+            save_clicked = st.form_submit_button("💾 수정", use_container_width=True)
         with col_btn2:
-            del_clicked = st.form_submit_button("🗑️ 삭제하기", use_container_width=True)
+            del_clicked = st.form_submit_button("🗑️ 삭제", use_container_width=True)
+        with col_btn3:
+            close_clicked = st.form_submit_button("❌ 닫기", use_container_width=True)
             
         if save_clicked:
             payload = {
@@ -235,7 +204,7 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, cl
             res = send_post_request(web_url, payload)
             if res and res.get("status") == "success":
                 st.success("수정 완료!")
-                st.session_state.dialog_data = None
+                st.session_state.dialog_target = None
                 st.rerun()
                 
         if del_clicked:
@@ -246,8 +215,12 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, cl
             res = send_post_request(web_url, payload)
             if res and res.get("status") == "success":
                 st.success("삭제 완료!")
-                st.session_state.dialog_data = None
+                st.session_state.dialog_target = None
                 st.rerun()
+                
+        if close_clicked:
+            st.session_state.dialog_target = None
+            st.rerun()
 
 # 메인 로직 실행
 if not web_app_url:
@@ -258,17 +231,26 @@ else:
     if rows is None:
         st.error("데이터를 불러올 수 없습니다. URL을 확인해 주세요.")
     else:
-        # 만약 대화상자 데이터가 존재하면 팝업 모달 실행
-        if st.session_state.dialog_data:
-            d = st.session_state.dialog_data
-            open_edit_dialog(
-                d["sheet_row_idx"], 
-                d["current_ing"], 
-                d["clean_date_str"], 
-                d["current_cat"], 
-                d["clean_expiry_str"], 
-                web_app_url
-            )
+        data_rows = rows[1:] if len(rows) > 1 else []
+        
+        # 세션에 타겟이 지정되어 있으면 모달 팝업 실행
+        if st.session_state.dialog_target is not None:
+            target_idx = st.session_state.dialog_target
+            data_idx = target_idx - 2
+            if 0 <= data_idx < len(data_rows):
+                r_data = data_rows[data_idx]
+                c_ing = r_data[0] if len(r_data) > 0 else ""
+                c_date = r_data[1] if len(r_data) > 1 else ""
+                c_cat = r_data[2] if len(r_data) > 2 else "식자재"
+                c_expiry = r_data[3] if len(r_data) > 3 else ""
+                open_edit_dialog(
+                    target_idx, 
+                    c_ing, 
+                    parse_sheet_date(c_date), 
+                    c_cat, 
+                    parse_sheet_date(c_expiry), 
+                    web_app_url
+                )
         
         tab1, tab2 = st.tabs(["🛒 냉장고 재료 관리", "🤖 AI 한상차림 식단"])
         
@@ -298,7 +280,6 @@ else:
             st.subheader("❄️ 현재 냉장고 보관함")
             
             if len(rows) > 1:
-                data_rows = rows[1:]
                 kst_today = get_kst_today()
                 
                 sort_option = st.selectbox(
@@ -363,9 +344,9 @@ else:
                                 
                             header_html = f"""
                             <div class="fridge-table-header">
-                                <div class="col-name">식자재명</div>
-                                <div class="col-date">입고일</div>
-                                <div class="col-days">경과일</div>
+                                <div style="flex: 1; padding-left: 4px;">식자재명</div>
+                                <div style="width: 75px; text-align: center;">입고일</div>
+                                <div style="width: 55px; text-align: right; padding-right: 4px;">경과일</div>
                             </div>
                             """
                             st.markdown(header_html, unsafe_allow_html=True)
@@ -373,25 +354,18 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str, expiry_days_left in cat_items:
                                 inline_style = get_row_style(expiry_days_left)
                                 
-                                # 행 전체를 감싸는 컨테이너 안에 가로 정렬 레이아웃과 버튼 배치
                                 with st.container():
-                                    st.markdown(f"""
-                                        <div class="fridge-row" style="{inline_style}">
-                                            <div class="col-name">🏷️ {current_ing}</div>
-                                            <div class="col-date">{short_date}</div>
-                                            <div class="col-days">{days_label}</div>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                    
-                                    if st.button(f"⚙️ [{current_ing}] 상세 관리 및 수정", key=f"open_dialog_btn_{sheet_row_idx}", use_container_width=True):
-                                        st.session_state.dialog_data = {
-                                            "sheet_row_idx": sheet_row_idx,
-                                            "current_ing": current_ing,
-                                            "clean_date_str": clean_date_str,
-                                            "current_cat": current_cat,
-                                            "clean_expiry_str": clean_expiry_str
-                                        }
-                                        st.rerun()
+                                    st.markdown(f'<div class="fridge-row" style="{inline_style}">', unsafe_allow_html=True)
+                                    col_n, col_d, col_ds = st.columns([3, 1, 1])
+                                    with col_n:
+                                        if st.button(f"🏷️ {current_ing}", key=f"item_btn_{sheet_row_idx}", use_container_width=True):
+                                            st.session_state.dialog_target = sheet_row_idx
+                                            st.rerun()
+                                    with col_d:
+                                        st.markdown(f"<div style='text-align: center; padding-top: 10px; font-size: 0.9rem; color: #555;'>{short_date}</div>", unsafe_allow_html=True)
+                                    with col_ds:
+                                        st.markdown(f"<div style='text-align: right; padding-top: 10px; font-size: 0.9rem; color: #e67e22; font-weight: bold;'>{days_label}</div>", unsafe_allow_html=True)
+                                    st.markdown('</div>', unsafe_allow_html=True)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
             else:
@@ -411,7 +385,6 @@ else:
             if not groq_api_key:
                 st.warning("⚠️ Groq API Key가 설정되지 않았습니다. 사이드바의 [설정 변경] 메뉴에서 입력해 주세요.")
             else:
-                data_rows = rows[1:] if len(rows) > 1 else []
                 ingredients_all = []
                 side_dishes = []
                 condiments = []
