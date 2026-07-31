@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 톱니바퀴 아이콘 스타일 강제 적용을 위한 정밀 CSS
+# 톱니바퀴 아이콘 정밀 타겟팅 및 스타일 적용 CSS
 st.markdown("""
     <style>
     /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
@@ -63,8 +63,8 @@ st.markdown("""
         align-items: center !important;
     }
     
-    /* 3. 톱니바퀴 버튼 내부 텍스트/이모지까지 완벽하게 타겟팅하여 세련된 흐린 아이콘 적용 */
-    div[data-testid="column"] button {
+    /* 3. 품목 관리 톱니바퀴 버튼 전용 정밀 타겟팅 (이전 스타일 완전히 지우고 재적용) */
+    button[title="품목 관리"] {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
@@ -74,9 +74,9 @@ st.markdown("""
         height: 32px !important;
         width: 100% !important;
     }
-    div[data-testid="column"] button p, 
-    div[data-testid="column"] button span,
-    div[data-testid="column"] button div {
+    button[title="품목 관리"] p, 
+    button[title="품목 관리"] span,
+    button[title="품목 관리"] div {
         color: #b0b0b0 !important;
         opacity: 0.5 !important;
         font-size: 1.1rem !important;
@@ -85,9 +85,9 @@ st.markdown("""
         align-items: center !important;
         justify-content: center !important;
     }
-    div[data-testid="column"] button:hover p,
-    div[data-testid="column"] button:hover span,
-    div[data-testid="column"] button:hover div {
+    button[title="품목 관리"]:hover p,
+    button[title="품목 관리"]:hover span,
+    button[title="품목 관리"]:hover div {
         color: #333333 !important;
         opacity: 1.0 !important;
     }
@@ -107,7 +107,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("톱니바퀴 아이콘 스타일이 세련되게 적용된 스마트 냉장고입니다.")
+st.write("톱니바퀴 아이콘 스타일이 정밀하게 적용된 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -293,7 +293,7 @@ else:
                                 # 2개 컬럼 구조로 수평 정렬 보장
                                 c_info, c_btn = st.columns([5.8, 0.9])
                                 
-                                # 왼쪽 컬럼: 식자재명 폰트 크기 확대 및 수평 정렬
+                                # 왼쪽 컬럼: 식자재명 폰트 크기 및 수평 정렬
                                 with c_info:
                                     st.markdown(f"""
                                         <div style="display: flex; align-items: center; width: 100%; gap: 6px; overflow: hidden; margin: 0; padding: 0; line-height: 1.2;">
@@ -303,7 +303,7 @@ else:
                                         </div>
                                     """, unsafe_allow_html=True)
                                     
-                                # 오른쪽 컬럼: 세련되고 흐린 톱니바퀴 버튼 배치
+                                # 오른쪽 컬럼: 정밀 타겟팅된 세련되고 흐린 톱니바퀴 버튼 배치
                                 with c_btn:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
