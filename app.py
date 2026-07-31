@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 톱니바퀴 아이콘 정밀 타겟팅 및 스타일 적용 CSS
+# 완벽한 수평 정렬 및 톱니바퀴 스타일링을 위한 정밀 CSS
 st.markdown("""
     <style>
     /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
@@ -42,7 +42,7 @@ st.markdown("""
         overflow-x: hidden !important;
     }
     
-    /* 2. 가로 블록 수직 중앙 정렬 고정 */
+    /* 2. 가로 블록 및 컬럼 수직 중앙 정렬 강제 고정 */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -50,7 +50,7 @@ st.markdown("""
         align-items: center !important;
         width: 100% !important;
         max-width: 100% !important;
-        gap: 4px !important;
+        gap: 6px !important;
         box-sizing: border-box !important;
     }
     
@@ -63,7 +63,7 @@ st.markdown("""
         align-items: center !important;
     }
     
-    /* 3. 품목 관리 톱니바퀴 버튼 전용 정밀 타겟팅 (이전 스타일 완전히 지우고 재적용) */
+    /* 3. 품목 관리 톱니바퀴 버튼 스타일 재정의 (흐리고 세련된 아이콘) */
     button[title="품목 관리"] {
         background-color: transparent !important;
         border: none !important;
@@ -73,17 +73,22 @@ st.markdown("""
         min-height: unset !important;
         height: 32px !important;
         width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     button[title="품목 관리"] p, 
     button[title="품목 관리"] span,
     button[title="품목 관리"] div {
         color: #b0b0b0 !important;
-        opacity: 0.5 !important;
+        opacity: 0.55 !important;
         font-size: 1.1rem !important;
         transition: opacity 0.2s ease, color 0.2s ease !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     button[title="품목 관리"]:hover p,
     button[title="품목 관리"]:hover span,
@@ -107,7 +112,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("톱니바퀴 아이콘 스타일이 정밀하게 적용된 스마트 냉장고입니다.")
+st.write("완벽한 수평 정렬과 세련된 톱니바퀴 아이콘이 적용된 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -290,7 +295,7 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # 2개 컬럼 구조로 수평 정렬 보장
+                                # 2개 컬럼 구조 (완벽한 수평 정렬 비율)
                                 c_info, c_btn = st.columns([5.8, 0.9])
                                 
                                 # 왼쪽 컬럼: 식자재명 폰트 크기 및 수평 정렬
@@ -303,7 +308,7 @@ else:
                                         </div>
                                     """, unsafe_allow_html=True)
                                     
-                                # 오른쪽 컬럼: 정밀 타겟팅된 세련되고 흐린 톱니바퀴 버튼 배치
+                                # 오른쪽 컬럼: 세련되고 흐린 톱니바퀴 버튼 배치
                                 with c_btn:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
