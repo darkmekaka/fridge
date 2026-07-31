@@ -29,82 +29,58 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 상단 공백 제거 및 보관함 목록 가로 한 줄 강제 고정 CSS (박스 및 세로 꺾임 방지)
+# 상단 공백 제거 및 레이아웃을 완벽하게 제어하는 CSS
 st.markdown("""
     <style>
+    /* 1. 앱 전체의 여백을 줄여 공간 확보 */
     .block-container {
-        padding-top: 2rem !important;
+        padding-top: 1.5rem !important;
         padding-bottom: 3rem !important;
         max-width: 100% !important;
-        box-sizing: border-box !important;
-    }
-    .stApp {
         overflow-x: hidden !important;
-        max-width: 700px;
-        margin: 0 auto;
     }
     
-    /* 보관함 목록 행 전용 격리 컨테이너 (박스 테두리 원천 차단) */
-    .inventory-row-container {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        width: 100% !important;
-    }
-    
-    /* 어떤 화면 크기에서도 무조건 가로 한 줄 유지 (세로로 떨어짐 방지) */
-    .inventory-row-container div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
+    /* 2. 핵심: 모든 가로 블록(리스트)이 폴드 등 좁은 화면에서도 세로로 꺾이지 않고 한 줄 고정되도록 설정 */
+    div[data-testid="stHorizontalBlock"] {
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        gap: 2px !important;
-        margin: 0 !important;
-        padding: 0 !important;
+    }
+    div[data-testid="column"] {
+        min-width: 0 !important; /* 글자가 넘치면 컨테이너가 줄어들 수 있게 허용 */
+        width: auto !important;
+        flex: 1 1 0px !important;
     }
     
-    .inventory-row-container div[data-testid="column"] {
-        flex: 1 1 0 !important;
-        min-width: 0 !important;
-        max-width: none !important;
-        box-sizing: border-box !important;
-        padding: 0 1px !important;
+    /* 3. 예외 처리: 입력 폼 내부의 가로 블록은 모바일에서 자연스럽게 세로로 떨어지도록 허용 */
+    @media (max-width: 576px) {
+        div[data-testid="stForm"] div[data-testid="stHorizontalBlock"] {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+        div[data-testid="stForm"] div[data-testid="column"] {
+            width: 100% !important;
+            margin-bottom: 0.5rem !important;
+        }
     }
     
-    /* 텍스트가 길 경우 말줄임표 처리 */
+    /* 4. 텍스트가 너무 길어지면 말줄임표(...) 처리 */
     .truncate-text {
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        display: block !important;
-        width: 100% !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
     }
     
-    /* 톱니바퀴 버튼 테두리 및 박스 흔적 완전 제거 */
-    .inventory-row-container button {
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        outline: none !important;
-        padding: 0px !important;
-        font-size: 0.85rem !important;
-        min-height: unset !important;
-        height: auto !important;
-        line-height: 1 !important;
-    }
-    .inventory-row-container button:hover {
-        background-color: rgba(0, 0, 0, 0.05) !important;
-        border: none !important;
+    /* 5. 투명 버튼(tertiary)의 좌우 패딩을 최소화하여 공간 낭비 방지 */
+    button[kind="tertiary"] {
+        padding: 0 4px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("스마트폰 화면에서도 박스 없이 완벽하게 한 줄로 정렬되는 스마트 냉장고입니다.")
+st.write("스마트폰에서도 한 줄로 깔끔하게 정리되는 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -290,20 +266,20 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # 인라인 컨테이너로 감싸서 오직 해당 목록 줄만 박스 없이 가로 한 줄로 고정
-                                st.markdown("<div class='inventory-row-container'>", unsafe_allow_html=True)
-                                r_c1, r_c2, r_c3, r_c4 = st.columns([3.2, 1.4, 1.2, 0.6])
+                                # 모든 <div> 감싸기 꼼수를 제거하고 Streamlit 기본 컬럼 배치만 사용합니다.
+                                # 좁은 화면에 최적화된 새로운 가로 비율 할당 [이름, 날짜, 디데이, 톱니바퀴]
+                                r_c1, r_c2, r_c3, r_c4 = st.columns([4.0, 2.5, 1.5, 1.0])
                                 
                                 with r_c1:
-                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.8rem; font-weight: bold;'>{current_ing}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<span class='truncate-text' style='font-size: 0.9rem; font-weight: bold;'>{current_ing}</span>", unsafe_allow_html=True)
                                 with r_c2:
-                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.7rem; color: #666;'>{short_date}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<span class='truncate-text' style='font-size: 0.8rem; color: #666;'>{short_date}</span>", unsafe_allow_html=True)
                                 with r_c3:
-                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.7rem; color: #e67e22; font-weight: bold;'>{days_label}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<span class='truncate-text' style='font-size: 0.8rem; color: #e67e22; font-weight: bold;'>{days_label}</span>", unsafe_allow_html=True)
                                 with r_c4:
-                                    if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리"):
+                                    # 핵심 변경: type="tertiary" 속성을 추가하여 버튼을 투명한 글자(아이콘)처럼 만듭니다.
+                                    if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
-                                st.markdown("</div>", unsafe_allow_html=True)
                                         
                                 st.markdown("<hr style='margin: 3px 0px; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
                         else:
