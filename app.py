@@ -307,12 +307,12 @@ else:
                             """
                             st.markdown(header_html, unsafe_allow_html=True)
                             
-                            # 순수 HTML 행 출력 (클릭 시 쿼리 파라미터를 통해 다이얼로그 호출)
+                            # 순수 HTML 행 출력 (아이콘 제거 및 냉장고 느낌의 🧊 아이콘 적용)
                             for sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat in cat_items:
                                 row_html = f"""
                                 <div class="fridge-row">
                                     <div class="col-name">
-                                        <a href="?edit={sheet_row_idx}" target="_self">📦 {current_ing}</a>
+                                        <a href="?edit={sheet_row_idx}" target="_self">🧊 {current_ing}</a>
                                     </div>
                                     <div class="col-date">{short_date}</div>
                                     <div class="col-days">{days_label}</div>
