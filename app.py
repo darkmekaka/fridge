@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 완벽한 수평 정렬 및 톱니바퀴 스타일링을 위한 정밀 CSS
+# 상하 간격 극대화 축소 및 수평 정렬을 위한 정밀 CSS
 st.markdown("""
     <style>
     /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
@@ -42,7 +42,7 @@ st.markdown("""
         overflow-x: hidden !important;
     }
     
-    /* 2. 가로 블록 및 컬럼 수직 중앙 정렬 강제 고정 */
+    /* 2. 가로 블록 수직 중앙 정렬 및 상하 간격 압축 */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -51,6 +51,7 @@ st.markdown("""
         width: 100% !important;
         max-width: 100% !important;
         gap: 6px !important;
+        margin-bottom: -10px !important;
         box-sizing: border-box !important;
     }
     
@@ -71,7 +72,7 @@ st.markdown("""
         padding: 0px !important;
         margin: 0px !important;
         min-height: unset !important;
-        height: 32px !important;
+        height: 28px !important;
         width: 100% !important;
         display: flex !important;
         align-items: center !important;
@@ -102,6 +103,7 @@ st.markdown("""
         div[data-testid="stForm"] div[data-testid="stHorizontalBlock"] {
             flex-direction: column !important;
             gap: 10px !important;
+            margin-bottom: 0px !important;
         }
         div[data-testid="stForm"] div[data-testid="column"] {
             width: 100% !important;
@@ -112,7 +114,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("완벽한 수평 정렬과 세련된 톱니바퀴 아이콘이 적용된 스마트 냉장고입니다.")
+st.write("상하 간격이 슬림하게 줄어든 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -313,8 +315,8 @@ else:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
                                         
-                                # 상하 간격을 좁히기 위해 구분선 마진 최소화
-                                st.markdown("<hr style='margin: 1px 0px; border: none; border-top: 1px solid #f0f0f0;'>", unsafe_allow_html=True)
+                                # 상하 간격을 슬림하게 유지하기 위한 초미니 구분선
+                                st.markdown("<hr style='margin: 0px 0px; border: none; border-top: 1px solid #f0f0f0;'>", unsafe_allow_html=True)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
             else:
