@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 좌우 컬럼 여백 및 완벽한 수평 정렬을 위한 정밀 CSS
+# 톱니바퀴 하단 정렬을 위한 정밀 CSS
 st.markdown("""
     <style>
     /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
@@ -42,12 +42,12 @@ st.markdown("""
         overflow-x: hidden !important;
     }
     
-    /* 2. 가로 블록 및 컬럼 정밀 수직 중앙 정렬 */
+    /* 2. 가로 블록 및 컬럼 하단 정렬(flex-end) 적용 */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        align-items: center !important;
+        align-items: flex-end !important;
         width: 100% !important;
         max-width: 100% !important;
         gap: 6px !important;
@@ -61,11 +61,10 @@ st.markdown("""
         overflow: hidden !important;
         padding: 0 !important;
         display: flex !important;
-        align-items: center !important;
-        height: 100% !important;
+        align-items: flex-end !important;
     }
     
-    /* 3. 품목 관리 톱니바퀴 버튼 여백/크기 완벽 동기화 */
+    /* 3. 품목 관리 톱니바퀴 버튼 하단 맞춤 스타일 */
     button[title="품목 관리"] {
         background-color: transparent !important;
         border: none !important;
@@ -76,7 +75,7 @@ st.markdown("""
         height: 24px !important;
         width: 100% !important;
         display: flex !important;
-        align-items: center !important;
+        align-items: flex-end !important;
         justify-content: center !important;
     }
     button[title="품목 관리"] p, 
@@ -87,7 +86,7 @@ st.markdown("""
         font-size: 1.1rem !important;
         transition: opacity 0.2s ease, color 0.2s ease !important;
         display: flex !important;
-        align-items: center !important;
+        align-items: flex-end !important;
         justify-content: center !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -116,7 +115,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("좌우 여백과 수평 정렬이 완벽하게 맞춰진 스마트 냉장고입니다.")
+st.write("하단 정렬이 적용된 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -299,20 +298,20 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # 2개 컬럼 구조 (여백 및 정렬 완벽 동기화)
+                                # 2개 컬럼 구조 (하단 정렬 적용)
                                 c_info, c_btn = st.columns([5.8, 0.9])
                                 
-                                # 왼쪽 컬럼: 식자재명 폰트 크기 및 수평 정렬
+                                # 왼쪽 컬럼: 식자재명 폰트 크기 및 정렬
                                 with c_info:
                                     st.markdown(f"""
-                                        <div style="display: flex; align-items: center; width: 100%; gap: 6px; overflow: hidden; margin: 0; padding: 0; line-height: 1.2;">
+                                        <div style="display: flex; align-items: flex-end; width: 100%; gap: 6px; overflow: hidden; margin: 0; padding: 0; line-height: 1.2;">
                                             <div style="flex: 2.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.15rem; font-weight: bold; color: #222;">{current_ing}</div>
                                             <div style="flex: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem; color: #666;">{short_date}</div>
                                             <div style="flex: 1.0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem; color: #e67e22; font-weight: bold;">{days_label}</div>
                                         </div>
                                     """, unsafe_allow_html=True)
                                     
-                                # 오른쪽 컬럼: 완벽 수평 정렬된 톱니바퀴 버튼 배치
+                                # 오른쪽 컬럼: 하단 정렬된 톱니바퀴 버튼 배치
                                 with c_btn:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
