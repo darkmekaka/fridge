@@ -6,7 +6,7 @@ from datetime import datetime, date, timedelta, timezone
 from groq import Groq
 
 # 앱 화면 설정 (모바일 최적화 넓이 설정)
-st.set_page_config(page_title="우리집 스마트 냉장고", page_icon="🍳", layout="centered")
+st.set_page_config(page_title="쑥잠이 냉장고", page_icon="🍳", layout="centered")
 
 # 한국 시간(KST, UTC+9) 기준 오늘 날짜 산출 함수
 def get_kst_today():
@@ -29,9 +29,13 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 모바일 가독성 및 버튼 스타일 최적화 CSS
+# 상단 공백 제거 및 모바일 가독성 최적화 CSS
 st.markdown("""
     <style>
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 3rem !important;
+    }
     div[data-testid="stHorizontalBlock"] button {
         background-color: transparent !important;
         border: none !important;
@@ -50,10 +54,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🍳쑥잠이 냉장고")
-st.write("냉장고 재료로 뭘 만들수 있을까?")
+st.title("🍳 쑥잠이 냉장고")
+st.write("카테고리와 타이틀이 깔끔하게 정돈된 스마트 냉장고 관리 앱입니다.")
 
-# 1. st.secrets에서 기본값 불러오기 (설정되어 있지 않다면 빈 문자열)
+# st.secrets에서 기본값 불러오기
 default_gas_url = ""
 default_groq_key = ""
 
@@ -65,13 +69,13 @@ try:
 except Exception:
     pass
 
-# 세션 상태 초기화 (secrets 값이 있으면 우선 적용)
+# 세션 상태 초기화
 if "web_app_url" not in st.session_state:
     st.session_state.web_app_url = default_gas_url
 if "saved_groq_key" not in st.session_state:
     st.session_state.saved_groq_key = default_groq_key
 
-# 사이드바: 설정 관리 (필요할 때만 변경할 수 있도록 유지)
+# 사이드바: 설정 변경 메뉴
 with st.sidebar.expander("🔧 설정 변경 (필요한 경우만)", expanded=False):
     with st.form("config_form"):
         temp_url = st.text_input("GAS 웹 앱 URL", value=st.session_state.web_app_url)
@@ -113,7 +117,7 @@ def send_post_request(url, payload):
         st.error(f"서버 통신 중 오류 발생: {e}")
         return None
 
-# 중앙 팝업 모달 함수
+# 중앙 팝업 모달 함수 (분류: 식자재, 밑반찬, 양념)
 @st.dialog("⚙️ 품목 관리")
 def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_url):
     st.write(f"**[{current_ing}]** 정보를 수정하거나 삭제할 수 있습니다.")
@@ -125,7 +129,10 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, we
         except ValueError:
             p_dt = get_kst_today()
         edit_date_val = st.date_input("입고일 수정", value=p_dt)
-        edit_cat_val = st.selectbox("분류 변경", ["식자재", "밑반찬", "양념"], index=["식자재", "밑반찬", "양념"].index(current_cat) if current_cat in ["식자재", "밑반찬", "양념"] else 0)
+        
+        categories_list = ["식자재", "밑반찬", "양념"]
+        cat_index = categories_list.index(current_cat) if current_cat in categories_list else 0
+        edit_cat_val = st.selectbox("분류 변경", categories_list, index=cat_index)
         
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
@@ -170,7 +177,7 @@ else:
         with tab1:
             st.subheader("🛒 식자재 및 반찬 추가하기")
             with st.form("add_ingredient_form", clear_on_submit=True):
-                new_ingredient = st.text_input("품목 이름 (예: 대파, 멸치볶음)")
+                new_ingredient = st.text_input("품목 이름 (예: 대파, 참기름)")
                 col_f2, col_f3 = st.columns(2)
                 with col_f2:
                     input_date = st.date_input("입력 날짜", value=get_kst_today())
