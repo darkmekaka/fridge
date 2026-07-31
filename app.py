@@ -138,8 +138,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🍳 깜짝이네 냉장고")
-st.write("식자재 이름을 누르면 상세 정보 및 유통기한을 확인·수정할 수 있습니다.")
+# 제목 및 안내 문구 가운데 정렬 적용 (이모지 제거 완료)
+st.markdown("<h1 style='text-align: center;'>깜짝이네 냉장고</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #555; margin-bottom: 2rem;'>식자재 이름을 누르면 상세 정보 및 유통기한을 확인·수정할 수 있습니다.</p>", unsafe_allow_html=True)
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
