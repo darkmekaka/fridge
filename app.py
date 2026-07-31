@@ -51,7 +51,7 @@ def get_row_style(days_left):
     else:
         return "background-color: #ffffff; border: 1px solid #eaeaea;"
 
-# 순수 HTML/CSS 기반 스타일 정의
+# 순수 HTML/CSS 기반 스타일 정의 (가로 정렬 표 디자인 복원)
 st.markdown("""
     <style>
     header {
@@ -81,6 +81,60 @@ st.markdown("""
         color: #888;
         font-weight: bold;
     }
+    
+    .fridge-row {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .col-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .col-name a {
+        color: #222222;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 0.95rem;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .col-name a:hover {
+        color: #e67e22;
+    }
+    
+    .col-date {
+        flex: 0 0 75px;
+        width: 75px;
+        text-align: center;
+        font-size: 0.9rem;
+        color: #555;
+        white-space: nowrap;
+    }
+    
+    .col-days {
+        flex: 0 0 55px;
+        width: 55px;
+        text-align: right;
+        font-size: 0.9rem;
+        color: #e67e22;
+        font-weight: bold;
+        white-space: nowrap;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -104,8 +158,6 @@ if "web_app_url" not in st.session_state:
     st.session_state.web_app_url = default_gas_url
 if "saved_groq_key" not in st.session_state:
     st.session_state.saved_groq_key = default_groq_key
-if "edit_target" not in st.session_state:
-    st.session_state.edit_target = None
 
 # 사이드바: 설정 변경 메뉴
 with st.sidebar.expander("🔧 설정 변경 (필요한 경우만)", expanded=False):
@@ -193,7 +245,7 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, cl
             res = send_post_request(web_url, payload)
             if res and res.get("status") == "success":
                 st.success("수정 완료!")
-                st.session_state.edit_target = None
+                st.query_params.clear()
                 st.rerun()
                 
         if del_clicked:
@@ -204,7 +256,7 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, cl
             res = send_post_request(web_url, payload)
             if res and res.get("status") == "success":
                 st.success("삭제 완료!")
-                st.session_state.edit_target = None
+                st.query_params.clear()
                 st.rerun()
 
 # 메인 로직 실행
@@ -261,6 +313,8 @@ else:
                     "양념": sub_tab3
                 }
                 
+                edit_target_idx = st.query_params.get("edit", None)
+                
                 for cat_name, sub_tab_obj in categories_mapping.items():
                     with sub_tab_obj:
                         cat_items = []
@@ -309,9 +363,9 @@ else:
                                 
                             header_html = f"""
                             <div class="fridge-table-header">
-                                <div style="flex: 1; padding-left: 4px;">식자재명</div>
-                                <div style="width: 75px; text-align: center;">입고일</div>
-                                <div style="width: 55px; text-align: right; padding-right: 4px;">경과일</div>
+                                <div class="col-name">식자재명</div>
+                                <div class="col-date">입고일</div>
+                                <div class="col-days">경과일</div>
                             </div>
                             """
                             st.markdown(header_html, unsafe_allow_html=True)
@@ -319,24 +373,18 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str, expiry_days_left in cat_items:
                                 inline_style = get_row_style(expiry_days_left)
                                 
-                                with st.container():
-                                    st.markdown(f"""
-                                        <div style="{inline_style} border-radius: 10px; padding: 4px 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                                    """, unsafe_allow_html=True)
-                                    
-                                    col1, col2, col3 = st.columns([3, 1.2, 1])
-                                    with col1:
-                                        if st.button(f"🏷️ {current_ing}", key=f"edit_btn_{sheet_row_idx}", use_container_width=True):
-                                            st.session_state.edit_target = sheet_row_idx
-                                            st.rerun()
-                                    with col2:
-                                        st.markdown(f"<div style='text-align: center; padding-top: 8px; font-size: 0.9rem; color: #555;'>{short_date}</div>", unsafe_allow_html=True)
-                                    with col3:
-                                        st.markdown(f"<div style='text-align: right; padding-top: 8px; font-size: 0.9rem; color: #e67e22; font-weight: bold;'>{days_label}</div>", unsafe_allow_html=True)
-                                    
-                                    st.markdown("</div>", unsafe_allow_html=True)
+                                row_html = f"""
+                                <div class="fridge-row" style="{inline_style}">
+                                    <div class="col-name">
+                                        <a href="?edit={sheet_row_idx}" target="_self">🏷️ {current_ing}</a>
+                                    </div>
+                                    <div class="col-date">{short_date}</div>
+                                    <div class="col-days">{days_label}</div>
+                                </div>
+                                """
+                                st.markdown(row_html, unsafe_allow_html=True)
                                 
-                                if st.session_state.edit_target and str(st.session_state.edit_target) == str(sheet_row_idx):
+                                if edit_target_idx and str(edit_target_idx) == str(sheet_row_idx):
                                     open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, clean_expiry_str, web_app_url)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
@@ -382,13 +430,15 @@ else:
                     
                     refresh_recipes = st.button("🔄 다른 음식 추천받기", use_container_width=True, key="btn_refresh_5")
                     
-                    if refresh_recipes or True:
-                        if not data_rows:
-                            st.warning("냉장고가 비어있습니다!")
-                        else:
-                            with st.spinner("🔄 AI가 5가지 푸짐한 한상차림을 구성하고 있습니다..."):
-                                client = Groq(api_key=groq_api_key)
-                                prompt = f"""
+                    if refresh_recipes:
+                        st.session_state.pop("recipes_cache", None)
+                    
+                    if not data_rows:
+                        st.warning("냉장고가 비어있습니다!")
+                    else:
+                        with st.spinner("🔄 AI가 5가지 푸짐한 한상차림을 구성하고 있습니다..."):
+                            client = Groq(api_key=groq_api_key)
+                            prompt = f"""
 다음은 냉장고 보유 품목이야:
 - 식자재: [{main_str}]
 - 보유 밑반찬: [{side_str}]
@@ -402,41 +452,40 @@ else:
 - **정확히 5가지**의 서로 다른 한상차림 메뉴를 추천해줘.
 - JSON 객체 형태로만 답변: {{"recipes": [{{"recipe_name": "이름", "matched_ingredients": ["재료"], "missing_ingredients": ["필요재료"], "instructions": "1. 단계\\n2. 단계"}}]}}
 """
-                                try:
-                                    chat_completion = client.chat.completions.create(
-                                        messages=[
-                                            {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean with exactly 5 recipes."},
-                                            {"role": "user", "content": prompt}
-                                        ],
-                                        model="llama-3.3-70b-versatile",
-                                        response_format={"type": "json_object"},
-                                    )
-                                    
-                                    result_text = chat_completion.choices[0].message.content
-                                    response_data = json.loads(result_text)
-                                    recipes = response_data.get("recipes", [])
-                                    
-                                    for i, r in enumerate(recipes, 1):
-                                        st.markdown(f"### 🏆 {i}. {r['recipe_name']}")
-                                        st.write(f"✅ **사용 재료:** {', '.join(r['matched_ingredients'])}")
-                                        st.write(f"🛒 **추가 필요:** {', '.join(r['missing_ingredients']) if r['missing_ingredients'] else '없음'}")
-                                        st.markdown(f"🍳 **조리법:**\n\n{r['instructions']}")
-                                        st.divider()
-                                except Exception as e:
-                                    st.error(f"레시피 생성 중 오류 발생: {e}")
+                            try:
+                                chat_completion = client.chat.completions.create(
+                                    messages=[
+                                        {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean with exactly 5 recipes."},
+                                        {"role": "user", "content": prompt}
+                                    ],
+                                    model="llama-3.3-70b-versatile",
+                                    response_format={"type": "json_object"},
+                                )
+                                
+                                result_text = chat_completion.choices[0].message.content
+                                response_data = json.loads(result_text)
+                                recipes = response_data.get("recipes", [])
+                                
+                                for i, r in enumerate(recipes, 1):
+                                    st.markdown(f"### 🏆 {i}. {r['recipe_name']}")
+                                    st.write(f"✅ **사용 재료:** {', '.join(r['matched_ingredients'])}")
+                                    st.write(f"🛒 **추가 필요:** {', '.join(r['missing_ingredients']) if r['missing_ingredients'] else '없음'}")
+                                    st.markdown(f"🍳 **조리법:**\n\n{r['instructions']}")
+                                    st.divider()
+                            except Exception as e:
+                                st.error(f"레시피 생성 중 오류 발생: {e}")
                 
                 with ai_sub2:
                     st.markdown("#### 📅 1주일간 해먹을 수 있는 캘린더 식단")
                     
                     refresh_weekly = st.button("🔄 1주일 식단 다시 짜기", use_container_width=True, key="btn_refresh_weekly")
                     
-                    if refresh_weekly or True:
-                        if not data_rows:
-                            st.warning("냉장고가 비어있습니다!")
-                        else:
-                            with st.spinner("🔄 AI가 월요일부터 일요일까지 1주일 식단을 구성하고 있습니다..."):
-                                client = Groq(api_key=groq_api_key)
-                                prompt = f"""
+                    if not data_rows:
+                        st.warning("냉장고가 비어있습니다!")
+                    else:
+                        with st.spinner("🔄 AI가 월요일부터 일요일까지 1주일 식단을 구성하고 있습니다..."):
+                            client = Groq(api_key=groq_api_key)
+                            prompt = f"""
 다음은 냉장고 보유 품목이야:
 - 식자재: [{main_str}]
 - 보유 밑반찬: [{side_str}]
@@ -448,46 +497,45 @@ else:
 - 월요일부터 일요일까지 7일간의 식단을 캘린더 형태로 구성.
 - JSON 객체 형태로만 답변: {{"weekly_plan": [{{"day": "월요일", "menu_name": "메뉴 이름", "description": "설명 및 조리 팁", "ingredients_used": ["재료1"]}}, {{"day": "화요일", ...}}, {{"day": "수요일", ...}}, {{"day": "목요일", ...}}, {{"day": "금요일", ...}}, {{"day": "토요일", ...}}, {{"day": "일요일", ...}}]}}
 """
-                                try:
-                                    chat_completion = client.chat.completions.create(
-                                        messages=[
-                                            {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean."},
-                                            {"role": "user", "content": prompt}
-                                        ],
-                                        model="llama-3.3-70b-versatile",
-                                        response_format={"type": "json_object"},
-                                    )
+                            try:
+                                chat_completion = client.chat.completions.create(
+                                    messages=[
+                                        {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean."},
+                                        {"role": "user", "content": prompt}
+                                    ],
+                                    model="llama-3.3-70b-versatile",
+                                    response_format={"type": "json_object"},
+                                )
+                                
+                                result_text = chat_completion.choices[0].message.content
+                                response_data = json.loads(result_text)
+                                weekly_plan = response_data.get("weekly_plan", [])
+                                
+                                for day_item in weekly_plan:
+                                    day_name = day_item.get("day", "요일")
+                                    menu_name = day_item.get("menu_name", "")
+                                    desc = day_item.get("description", "")
+                                    used_ings = day_item.get("ingredients_used", [])
                                     
-                                    result_text = chat_completion.choices[0].message.content
-                                    response_data = json.loads(result_text)
-                                    weekly_plan = response_data.get("weekly_plan", [])
-                                    
-                                    for day_item in weekly_plan:
-                                        day_name = day_item.get("day", "요일")
-                                        menu_name = day_item.get("menu_name", "")
-                                        desc = day_item.get("description", "")
-                                        used_ings = day_item.get("ingredients_used", [])
-                                        
-                                        with st.expander(f"🗓️ {day_name} : {menu_name}", expanded=True):
-                                            st.write(f"🍳 **추천 메뉴:** {menu_name}")
-                                            st.write(f"📝 **조리 팁:** {desc}")
-                                            st.write(f"✅ **사용 재료:** {', '.join(used_ings) if used_ings else '기본 재료'}")
-                                        st.divider()
-                                except Exception as e:
-                                    st.error(f"1주일 식단 생성 중 오류 발생: {e}")
+                                    with st.expander(f"🗓️ {day_name} : {menu_name}", expanded=True):
+                                        st.write(f"🍳 **추천 메뉴:** {menu_name}")
+                                        st.write(f"📝 **조리 팁:** {desc}")
+                                        st.write(f"✅ **사용 재료:** {', '.join(used_ings) if used_ings else '기본 재료'}")
+                                    st.divider()
+                            except Exception as e:
+                                st.error(f"1주일 식단 생성 중 오류 발생: {e}")
 
                 with ai_sub3:
                     st.markdown("#### 🗓️ 한달 맞춤 식단 (메인 메뉴 리스트)")
                     
                     refresh_monthly = st.button("🔄 한달 식단 다시 짜기", use_container_width=True, key="btn_refresh_monthly")
                     
-                    if refresh_monthly or True:
-                        if not data_rows:
-                            st.warning("냉장고가 비어있습니다!")
-                        else:
-                            with st.spinner("🔄 AI가 한달(30일)간의 메인 메뉴 리스트를 구성하고 있습니다..."):
-                                client = Groq(api_key=groq_api_key)
-                                prompt = f"""
+                    if not data_rows:
+                        st.warning("냉장고가 비어있습니다!")
+                    else:
+                        with st.spinner("🔄 AI가 한달(30일)간의 메인 메뉴 리스트를 구성하고 있습니다..."):
+                            client = Groq(api_key=groq_api_key)
+                            prompt = f"""
 다음은 냉장고 보유 품목이야:
 - 식자재: [{main_str}]
 - 보유 밑반찬: [{side_str}]
@@ -500,22 +548,22 @@ else:
 - 한달(30일)간 해먹을 수 있는 **메인 메뉴 이름만** 순서대로 정확히 30개 나열해줘.
 - JSON 객체 형태로만 답변: {{"monthly_plan": ["메인메뉴1", "메인메뉴2", ..., "메인메뉴30"]}}
 """
-                                try:
-                                    chat_completion = client.chat.completions.create(
-                                        messages=[
-                                            {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean with a list of 30 menu names."},
-                                            {"role": "user", "content": prompt}
-                                        ],
-                                        model="llama-3.3-70b-versatile",
-                                        response_format={"type": "json_object"},
-                                    )
+                            try:
+                                chat_completion = client.chat.completions.create(
+                                    messages=[
+                                        {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean with a list of 30 menu names."},
+                                        {"role": "user", "content": prompt}
+                                    ],
+                                    model="llama-3.3-70b-versatile",
+                                    response_format={"type": "json_object"},
+                                )
+                                
+                                result_text = chat_completion.choices[0].message.content
+                                response_data = json.loads(result_text)
+                                monthly_plan = response_data.get("monthly_plan", [])
+                                
+                                for idx, menu_name in enumerate(monthly_plan, 1):
+                                    st.markdown(f"**{idx}일차:** {menu_name}")
                                     
-                                    result_text = chat_completion.choices[0].message.content
-                                    response_data = json.loads(result_text)
-                                    monthly_plan = response_data.get("monthly_plan", [])
-                                    
-                                    for idx, menu_name in enumerate(monthly_plan, 1):
-                                        st.markdown(f"**{idx}일차:** {menu_name}")
-                                        
-                                except Exception as e:
-                                    st.error(f"한달 식단 생성 중 오류 발생: {e}")
+                            except Exception as e:
+                                st.error(f"한달 식단 생성 중 오류 발생: {e}")
