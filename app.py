@@ -29,10 +29,9 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 텍스트는 중앙, 톱니바퀴만 하단 정렬을 위한 정밀 CSS
+# 깔끔한 리스트 버튼 배치를 위한 기본 스타일
 st.markdown("""
     <style>
-    /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 3rem !important;
@@ -41,88 +40,11 @@ st.markdown("""
         max-width: 100% !important;
         overflow-x: hidden !important;
     }
-    
-    /* 2. 가로 블록 기본 중앙 정렬 설정 */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        gap: 6px !important;
-        margin-bottom: -6px !important;
-        box-sizing: border-box !important;
-    }
-    
-    div[data-testid="column"] {
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
-        padding: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-    }
-    
-    /* 3. 톱니바퀴 버튼이 있는 오른쪽 컬럼만 하단(flex-end)으로 정렬 */
-    div[data-testid="column"]:has(button[title="품목 관리"]) {
-        align-self: flex-end !important;
-        align-items: flex-end !important;
-        padding-bottom: 1px !important;
-    }
-    
-    /* 4. 품목 관리 톱니바퀴 버튼 스타일 재정의 */
-    button[title="품목 관리"] {
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        padding: 0px !important;
-        margin: 0px !important;
-        min-height: unset !important;
-        height: 24px !important;
-        width: 100% !important;
-        display: flex !important;
-        align-items: flex-end !important;
-        justify-content: center !important;
-    }
-    button[title="품목 관리"] p, 
-    button[title="품목 관리"] span,
-    button[title="품목 관리"] div {
-        color: #b0b0b0 !important;
-        opacity: 0.55 !important;
-        font-size: 1.1rem !important;
-        transition: opacity 0.2s ease, color 0.2s ease !important;
-        display: flex !important;
-        align-items: flex-end !important;
-        justify-content: center !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        line-height: 1 !important;
-    }
-    button[title="품목 관리"]:hover p,
-    button[title="품목 관리"]:hover span,
-    button[title="품목 관리"]:hover div {
-        color: #333333 !important;
-        opacity: 1.0 !important;
-    }
-    
-    /* 5. 예외 처리: 상단 입력 폼 내부는 모바일에서 세로로 떨어지도록 허용 */
-    @media (max-width: 576px) {
-        div[data-testid="stForm"] div[data-testid="stHorizontalBlock"] {
-            flex-direction: column !important;
-            gap: 10px !important;
-            margin-bottom: 0px !important;
-        }
-        div[data-testid="stForm"] div[data-testid="column"] {
-            width: 100% !important;
-            max-width: 100% !important;
-        }
-    }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("톱니바퀴 하단 정렬이 적용된 스마트 냉장고입니다.")
+st.write("항목을 클릭하면 수정 및 삭제 팝업이 열립니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -305,26 +227,10 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # 2개 컬럼 구조
-                                c_info, c_btn = st.columns([5.8, 0.9])
-                                
-                                # 왼쪽 컬럼: 식자재명 폰트 크기 및 중앙 정렬 유지
-                                with c_info:
-                                    st.markdown(f"""
-                                        <div style="display: flex; align-items: center; width: 100%; gap: 6px; overflow: hidden; margin: 0; padding: 0; line-height: 1.2;">
-                                            <div style="flex: 2.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.15rem; font-weight: bold; color: #222;">{current_ing}</div>
-                                            <div style="flex: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem; color: #666;">{short_date}</div>
-                                            <div style="flex: 1.0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem; color: #e67e22; font-weight: bold;">{days_label}</div>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                    
-                                # 오른쪽 컬럼: 하단 정렬이 적용된 톱니바퀴 버튼 배치
-                                with c_btn:
-                                    if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
-                                        open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
-                                        
-                                # 상하 간격을 슬림하게 유지하기 위한 초미니 구분선
-                                st.markdown("<hr style='margin: 0px 0px; border: none; border-top: 1px solid #f0f0f0;'>", unsafe_allow_html=True)
+                                # 행 전체를 버튼으로 구성하여 클릭 시 팝업 오픈
+                                button_label = f"📦  {current_ing}    |    {short_date}    |    🔥 {days_label}"
+                                if st.button(button_label, key=f"row_btn_{sheet_row_idx}", use_container_width=True):
+                                    open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
             else:
