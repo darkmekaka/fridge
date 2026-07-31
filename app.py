@@ -261,19 +261,14 @@ else:
                 data_rows = rows[1:]
                 kst_today = get_kst_today()
                 
-                # 핵심 수정: 좌측엔 카테고리 탭, 우측 공간엔 정렬 필터를 나란히 배치
-                col_tabs, col_sort = st.columns([2.3, 1.7])
+                # 정렬 기준 셀렉트박스를 탭 바로 위에 안정적으로 배치
+                sort_option = st.selectbox(
+                    "정렬 기준 선택", 
+                    ["경과일 많은 순 (오래된 순)", "경과일 적은 순 (최신순)", "이름순 (ㄱㄴㄷ)", "이름순 (역순)"], 
+                    key="global_sort_option"
+                )
                 
-                with col_sort:
-                    sort_option = st.selectbox(
-                        "정렬 기준", 
-                        ["경과일 많은 순 (오래된 순)", "경과일 적은 순 (최신순)", "이름순 (ㄱㄴㄷ)", "이름순 (역순)"], 
-                        key="global_sort_option",
-                        label_visibility="collapsed"
-                    )
-                
-                with col_tabs:
-                    sub_tab1, sub_tab2, sub_tab3 = st.tabs(["🥩 식자재", "🥗 밑반찬", "🧂 양념류"])
+                sub_tab1, sub_tab2, sub_tab3 = st.tabs(["🥩 식자재", "🥗 밑반찬", "🧂 양념류"])
                 
                 categories_mapping = {
                     "식자재": sub_tab1,
