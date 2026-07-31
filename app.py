@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 깔끔한 리스트 스타일을 위한 CSS 설정
+# 박스 테두리를 없애고 깔끔한 리스트 형태로 만들기 위한 CSS
 st.markdown("""
     <style>
     .block-container {
@@ -40,7 +40,7 @@ st.markdown("""
         max-width: 100% !important;
         overflow-x: hidden !important;
     }
-    /* 리스트 항목 내 버튼을 깔끔하게 다듬기 */
+    /* 버튼 박스 스타일을 완전히 제거하여 일반 텍스트 리스트처럼 보이게 처리 */
     div.stButton > button {
         border: none !important;
         background-color: transparent !important;
@@ -53,7 +53,7 @@ st.markdown("""
         width: 100% !important;
     }
     div.stButton > button:hover {
-        background-color: #f8f9fa !important;
+        background-color: rgba(0, 0, 0, 0.03) !important;
         color: #e67e22 !important;
     }
     </style>
@@ -241,7 +241,7 @@ else:
                         
                         if cat_items:
                             st.write("")
-                            # 테이블 헤더 영역 (60%, 20%, 20% 비율)
+                            # 상단 헤더 (60%, 20%, 20% 비율)
                             h1, h2, h3 = st.columns([0.6, 0.2, 0.2])
                             with h1:
                                 st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>식자재명</span>", unsafe_allow_html=True)
@@ -252,7 +252,7 @@ else:
                             
                             st.markdown("<hr style='margin: 4px 0px 8px 0px; border: none; border-top: 1px solid #e0e0e0;'>", unsafe_allow_html=True)
                             
-                            # 각 행 데이터 출력 (60%, 20%, 20% 비율 적용 및 첫 번째 칸 클릭 시 팝업 실행)
+                            # 각 행 출력 (60%, 20%, 20% 비율 및 첫 번째 칸 클릭 시 팝업 연동)
                             for sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat in cat_items:
                                 r1, r2, r3 = st.columns([0.6, 0.2, 0.2])
                                 with r1:
