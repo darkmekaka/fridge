@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 상단 공백 제거 및 Streamlit 모바일 세로 쌓기 강제 무력화 CSS
+# 상단 공백 제거 및 갤럭시 폴드 접힘/펼침 양쪽 모두 완벽한 한 줄 고정 CSS
 st.markdown("""
     <style>
     .block-container {
@@ -43,41 +43,25 @@ st.markdown("""
         max-width: 700px;
         margin: 0 auto;
     }
-    .stForm, div[data-testid="stForm"] {
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-    }
     
-    /* 핵심: 모바일 화면(768px 이하)에서도 컬럼이 세로로 꺾이지 않고 무조건 한 줄 유지 */
-    @media (max-width: 768px) {
-        div.row-wrapper [data-testid="stHorizontalBlock"] {
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: center !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            gap: 2px !important;
-        }
-        div.row-wrapper [data-testid="column"] {
-            flex: 1 1 auto !important;
-            min-width: 0 !important;
-            box-sizing: border-box !important;
-        }
-    }
-    
-    /* 일반 화면 및 모바일 공통 한 줄 정렬 설정 */
-    div.row-wrapper [data-testid="stHorizontalBlock"] {
+    /* 폴드 외부 화면(접힘) 같은 초협폭 환경에서도 보관함 목록이 무조건 한 줄 유지되도록 설정 */
+    :not([data-testid="stForm"]) [data-testid="stHorizontalBlock"] {
         display: flex !important;
+        flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
         width: 100% !important;
         box-sizing: border-box !important;
         gap: 2px !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
-    div.row-wrapper [data-testid="column"] {
+    :not([data-testid="stForm"]) [data-testid="column"] {
         flex: 1 1 0 !important;
         min-width: 0 !important;
+        max-width: none !important;
         box-sizing: border-box !important;
+        padding: 0 1px !important;
     }
     
     /* 텍스트가 길 경우 말줄임표 처리 */
@@ -89,25 +73,26 @@ st.markdown("""
         width: 100% !important;
     }
     
-    /* 톱니바퀴 버튼 스타일 조정 */
-    div.row-wrapper button {
+    /* 톱니바퀴 버튼 스타일 정밀 정리 */
+    :not([data-testid="stForm"]) [data-testid="column"] button {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
         outline: none !important;
         padding: 0px !important;
-        font-size: 0.9rem !important;
+        font-size: 0.85rem !important;
         min-height: unset !important;
         height: auto !important;
+        line-height: 1 !important;
     }
-    div.row-wrapper button:hover {
+    :not([data-testid="stForm"]) [data-testid="column"] button:hover {
         background-color: rgba(0, 0, 0, 0.05) !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("스마트폰 화면에서도 가로 넘침 없이 완벽하게 한 줄로 정렬되는 스마트 냉장고입니다.")
+st.write("폴드 화면 크기(접힘/펼침)에 맞춰 유연하게 한 줄로 정렬되는 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -293,12 +278,11 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # row-wrapper 클래스로 감싸서 스마트폰에서도 무조건 한 줄로 고정
-                                st.markdown("<div class='row-wrapper'>", unsafe_allow_html=True)
-                                r_c1, r_c2, r_c3, r_c4 = st.columns([3.0, 1.5, 1.2, 0.6])
+                                # 태그 감싸기 없이 바로 컬럼 배치 (박스 생성 원인 원천 차단 및 폴드 최적화)
+                                r_c1, r_c2, r_c3, r_c4 = st.columns([3.2, 1.4, 1.2, 0.6])
                                 
                                 with r_c1:
-                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.85rem; font-weight: bold;'>{current_ing}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.8rem; font-weight: bold;'>{current_ing}</div>", unsafe_allow_html=True)
                                 with r_c2:
                                     st.markdown(f"<div class='truncate-text' style='font-size: 0.7rem; color: #666;'>{short_date}</div>", unsafe_allow_html=True)
                                 with r_c3:
@@ -306,7 +290,6 @@ else:
                                 with r_c4:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
-                                st.markdown("</div>", unsafe_allow_html=True)
                                         
                                 st.markdown("<hr style='margin: 3px 0px; border: none; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
                         else:
