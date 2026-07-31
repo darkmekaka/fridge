@@ -255,24 +255,25 @@ else:
                         st.rerun()
 
             st.divider()
-            
-            # 레이아웃 컬럼을 활용해 좌측엔 타이틀, 우측 공간에 정렬 필터 배치
-            col_title, col_sort = st.columns([1.2, 0.8])
-            with col_title:
-                st.subheader("❄️ 현재 냉장고 보관함")
-            with col_sort:
-                sort_option = st.selectbox(
-                    "정렬 기준", 
-                    ["경과일 많은 순 (오래된 순)", "경과일 적은 순 (최신순)", "이름순 (ㄱㄴㄷ)", "이름순 (역순)"], 
-                    key="global_sort_option",
-                    label_visibility="collapsed"
-                )
+            st.subheader("❄️ 현재 냉장고 보관함")
             
             if len(rows) > 1:
                 data_rows = rows[1:]
                 kst_today = get_kst_today()
                 
-                sub_tab1, sub_tab2, sub_tab3 = st.tabs(["🥩 식자재", "🥗 밑반찬", "🧂 양념류"])
+                # 핵심 수정: 좌측엔 카테고리 탭, 우측 공간엔 정렬 필터를 나란히 배치
+                col_tabs, col_sort = st.columns([2.3, 1.7])
+                
+                with col_sort:
+                    sort_option = st.selectbox(
+                        "정렬 기준", 
+                        ["경과일 많은 순 (오래된 순)", "경과일 적은 순 (최신순)", "이름순 (ㄱㄴㄷ)", "이름순 (역순)"], 
+                        key="global_sort_option",
+                        label_visibility="collapsed"
+                    )
+                
+                with col_tabs:
+                    sub_tab1, sub_tab2, sub_tab3 = st.tabs(["🥩 식자재", "🥗 밑반찬", "🧂 양념류"])
                 
                 categories_mapping = {
                     "식자재": sub_tab1,
