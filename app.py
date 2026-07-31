@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 수평 정렬, 세련된 버튼 및 좁은 상하 간격을 위한 정밀 CSS
+# 톱니바퀴 아이콘 스타일 강제 적용을 위한 정밀 CSS
 st.markdown("""
     <style>
     /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
@@ -63,7 +63,7 @@ st.markdown("""
         align-items: center !important;
     }
     
-    /* 3. 톱니바퀴 버튼 완벽 밀착 및 세련된 흐린 아이콘 스타일 적용 */
+    /* 3. 톱니바퀴 버튼 내부 텍스트/이모지까지 완벽하게 타겟팅하여 세련된 흐린 아이콘 적용 */
     div[data-testid="column"] button {
         background-color: transparent !important;
         border: none !important;
@@ -71,24 +71,25 @@ st.markdown("""
         padding: 0px !important;
         margin: 0px !important;
         min-height: unset !important;
-        height: 28px !important;
+        height: 32px !important;
         width: 100% !important;
+    }
+    div[data-testid="column"] button p, 
+    div[data-testid="column"] button span,
+    div[data-testid="column"] button div {
         color: #b0b0b0 !important;
         opacity: 0.5 !important;
+        font-size: 1.1rem !important;
         transition: opacity 0.2s ease, color 0.2s ease !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
     }
-    div[data-testid="column"] button:hover {
-        background-color: rgba(0,0,0,0.03) !important;
+    div[data-testid="column"] button:hover p,
+    div[data-testid="column"] button:hover span,
+    div[data-testid="column"] button:hover div {
         color: #333333 !important;
         opacity: 1.0 !important;
-    }
-    div[data-testid="column"] button p {
-        margin: 0 !important;
-        padding: 0 !important;
-        font-size: 1.0rem !important;
     }
     
     /* 4. 예외 처리: 상단 입력 폼 내부는 모바일에서 세로로 떨어지도록 허용 */
@@ -106,7 +107,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("완벽한 수평 정렬과 세련된 버튼 스타일이 적용된 스마트 냉장고입니다.")
+st.write("톱니바퀴 아이콘 스타일이 세련되게 적용된 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -292,7 +293,7 @@ else:
                                 # 2개 컬럼 구조로 수평 정렬 보장
                                 c_info, c_btn = st.columns([5.8, 0.9])
                                 
-                                # 왼쪽 컬럼: 식자재명 폰트 크기 3포인트 확대(1.15rem) 및 수평 정렬
+                                # 왼쪽 컬럼: 식자재명 폰트 크기 확대 및 수평 정렬
                                 with c_info:
                                     st.markdown(f"""
                                         <div style="display: flex; align-items: center; width: 100%; gap: 6px; overflow: hidden; margin: 0; padding: 0; line-height: 1.2;">
@@ -307,7 +308,7 @@ else:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
                                         
-                                # 상하 간격을 좁히기 위해 구분선 마진을 최소화
+                                # 상하 간격을 좁히기 위해 구분선 마진 최소화
                                 st.markdown("<hr style='margin: 1px 0px; border: none; border-top: 1px solid #f0f0f0;'>", unsafe_allow_html=True)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
