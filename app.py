@@ -29,22 +29,38 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 깔끔한 화면 여백 설정을 위한 기본 스타일
+# 깔끔한 리스트 스타일을 위한 CSS 설정
 st.markdown("""
     <style>
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 3rem !important;
-        padding-left: 0.4rem !important;
-        padding-right: 0.4rem !important;
+        padding-left: 0.8rem !important;
+        padding-right: 0.8rem !important;
         max-width: 100% !important;
         overflow-x: hidden !important;
+    }
+    /* 리스트 항목 내 버튼을 깔끔하게 다듬기 */
+    div.stButton > button {
+        border: none !important;
+        background-color: transparent !important;
+        color: #222222 !important;
+        font-weight: bold !important;
+        text-align: left !important;
+        padding: 4px 0px !important;
+        margin: 0px !important;
+        box-shadow: none !important;
+        width: 100% !important;
+    }
+    div.stButton > button:hover {
+        background-color: #f8f9fa !important;
+        color: #e67e22 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("목록에서 관리할 항목을 클릭하면 수정 및 삭제 팝업이 열립니다.")
+st.write("식자재 이름을 누르면 수정 및 삭제 팝업이 열립니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -221,35 +237,33 @@ else:
                                 except ValueError:
                                     days_label = "-"
                                     
-                                cat_items.append((sheet_row_idx, current_ing, short_date, days_label, current_cat))
+                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat))
                         
                         if cat_items:
                             st.write("")
-                            # 데이터프레임으로 변환하여 60% / 20% / 20% 비율에 맞게 출력 (식자재명, 입고일, 지난날)
-                            df_display = pd.DataFrame(cat_items, columns=["sheet_idx", "식자재명", "입고일", "지난날", "카테고리"])
+                            # 테이블 헤더 영역 (60%, 20%, 20% 비율)
+                            h1, h2, h3 = st.columns([0.6, 0.2, 0.2])
+                            with h1:
+                                st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>식자재명</span>", unsafe_allow_html=True)
+                            with h2:
+                                st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>입고일</span>", unsafe_allow_html=True)
+                            with h3:
+                                st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>경과일</span>", unsafe_allow_html=True)
                             
-                            event = st.dataframe(
-                                df_display[["식자재명", "입고일", "지난날"]],
-                                use_container_width=True,
-                                hide_index=True,
-                                selection_mode="single-row",
-                                on_select="rerun",
-                                column_config={
-                                    "식자재명": st.column_config.TextColumn("식자재명", width="large"),
-                                    "입고일": st.column_config.TextColumn("입고일", width="medium"),
-                                    "지난날": st.column_config.TextColumn("경과일", width="small")
-                                }
-                            )
+                            st.markdown("<hr style='margin: 4px 0px 8px 0px; border: none; border-top: 1px solid #e0e0e0;'>", unsafe_allow_html=True)
                             
-                            # 행이 선택되었을 때 해당 항목의 팝업 띄우기
-                            selected_rows = event.selection.rows
-                            if selected_rows:
-                                selected_idx = selected_rows[0]
-                                row_info = cat_items[selected_idx]
-                                sheet_row_idx, current_ing, short_date, days_label, current_cat = row_info
-                                # 원래 날짜 포맷 복원을 위해 기존 날짜 파싱값 전달
-                                original_date_str = parse_sheet_date(data_rows[sheet_row_idx - 2][1])
-                                open_edit_dialog(sheet_row_idx, current_ing, original_date_str, current_cat, web_app_url)
+                            # 각 행 데이터 출력 (60%, 20%, 20% 비율 적용 및 첫 번째 칸 클릭 시 팝업 실행)
+                            for sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat in cat_items:
+                                r1, r2, r3 = st.columns([0.6, 0.2, 0.2])
+                                with r1:
+                                    if st.button(f"📦 {current_ing}", key=f"item_{sheet_row_idx}"):
+                                        open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
+                                with r2:
+                                    st.markdown(f"<div style='padding-top: 6px; font-size: 0.9rem; color: #555;'>{short_date}</div>", unsafe_allow_html=True)
+                                with r3:
+                                    st.markdown(f"<div style='padding-top: 6px; font-size: 0.9rem; color: #e67e22; font-weight: bold;'>{days_label}</div>", unsafe_allow_html=True)
+                                
+                                st.markdown("<hr style='margin: 2px 0px; border: none; border-top: 1px solid #f0f0f0;'>", unsafe_allow_html=True)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
             else:
