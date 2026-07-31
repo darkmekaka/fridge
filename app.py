@@ -5,10 +5,10 @@ import json
 from datetime import datetime, date, timedelta, timezone
 from groq import Groq
 
-# 앱 화면 설정 및 홈 화면 메타데이터 설정
+# 1. 앱 화면 설정 및 안드로이드 홈 화면 메타데이터 설정
 st.set_page_config(
     page_title="깜짝이네 냉장고",  # 안드로이드 홈 화면에 표시될 앱 이름
-    page_icon="🍱",             # 홈 화면 아이콘으로 사용될 이모지
+    page_icon="🍳",             # 홈 화면 아이콘으로 사용될 이모지
     layout="centered"
 )
 
@@ -55,7 +55,7 @@ def get_row_style(days_left):
     else:
         return "background-color: #ffffff; border: 1px solid #eaeaea;"
 
-# 순수 HTML/CSS 기반 스타일 정의 (가로 정렬 표 디자인 복원)
+# 순수 HTML/CSS 기반 스타일 정의 (모바일 최적화 레이아웃)
 st.markdown("""
     <style>
     header {
@@ -142,7 +142,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 제목 및 안내 문구 가운데 정렬 적용
+# 타이틀 및 안내 문구
 st.markdown("<h1 style='text-align: center;'>깜짝이네 냉장고</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #555; margin-bottom: 2rem;'>식자재 이름을 누르면 상세 정보 및 유통기한을 확인·수정할 수 있습니다.</p>", unsafe_allow_html=True)
 
@@ -158,11 +158,17 @@ try:
 except Exception:
     pass
 
-# 세션 상태 초기화
+# 세션 상태 초기화 (캐시 히스토리 포함)
 if "web_app_url" not in st.session_state:
     st.session_state.web_app_url = default_gas_url
 if "saved_groq_key" not in st.session_state:
     st.session_state.saved_groq_key = default_groq_key
+if "recipe_history" not in st.session_state:
+    st.session_state.recipe_history = []
+if "weekly_history" not in st.session_state:
+    st.session_state.weekly_history = []
+if "monthly_history" not in st.session_state:
+    st.session_state.monthly_history = []
 
 # 사이드바: 설정 변경 메뉴
 with st.sidebar.expander("🔧 설정 변경 (필요한 경우만)", expanded=False):
@@ -208,7 +214,7 @@ def send_post_request(url, payload):
         st.error(f"서버 통신 중 오류 발생: {e}")
         return None
 
-# 중앙 팝업 모달 함수 (유통기한 확인 및 수정 기능 포함)
+# 중앙 팝업 모달 함수 (유통기한 확인 및 수정/삭제)
 @st.dialog("⚙️ 품목 상세 관리")
 def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, clean_expiry_str, web_url):
     st.write(f"**[{current_ing}]**의 정보 및 유통기한을 관리합니다.")
@@ -435,7 +441,7 @@ else:
                     st.markdown("#### 🍳 현재 재료로 바로 먹을 수 있는 한상차림 추천 5")
                     refresh_recipes = st.button("🔄 다른 음식 추천받기", use_container_width=True, key="btn_refresh_5")
                     
-                    if refresh_recipes or "recipes_data" not in st.session_state:
+                    if refresh_recipes:
                         if not data_rows:
                             st.warning("냉장고가 비어있습니다!")
                         else:
@@ -464,13 +470,32 @@ else:
                                         model="llama-3.3-70b-versatile",
                                         response_format={"type": "json_object"},
                                     )
-                                    st.session_state.recipes_data = json.loads(chat_completion.choices[0].message.content).get("recipes", [])
+                                    new_recipes = json.loads(chat_completion.choices[0].message.content).get("recipes", [])
+                                    st.session_state.recipes_data = new_recipes
+                                    
+                                    # 성공 시 캐시 히스토리에 추가 (최신순, 최대 3개 유지)
+                                    st.session_state.recipe_history.insert(0, new_recipes)
+                                    if len(st.session_state.recipe_history) > 3:
+                                        st.session_state.recipe_history = st.session_state.recipe_history[:3]
+                                        
                                 except Exception as e:
-                                    st.error(f"레시피 생성 중 오류 발생: {e}")
+                                    error_str = str(e)
+                                    if "429" in error_str or "Rate limit" in error_str:
+                                        st.warning("⏳ 오늘의 무료 AI 사용량 한도에 도달했습니다! 아래에 캐시된 최근 추천 기록을 보여드릴게요.")
+                                    else:
+                                        st.error(f"레시피 생성 중 오류 발생: {e}")
                                     st.session_state.recipes_data = []
 
+                    # 화면에 표시할 데이터 결정 (현재 데이터 또는 캐시 기록)
+                    display_recipes = []
                     if "recipes_data" in st.session_state and st.session_state.recipes_data:
-                        for i, r in enumerate(st.session_state.recipes_data, 1):
+                        display_recipes = st.session_state.recipes_data
+                    elif st.session_state.recipe_history:
+                        st.info("📦 API 한도 초과로 인해 **최근 저장된 캐시 기록**을 불러왔습니다.")
+                        display_recipes = st.session_state.recipe_history[0]
+
+                    if display_recipes:
+                        for i, r in enumerate(display_recipes, 1):
                             st.markdown(f"### 🏆 {i}. {r['recipe_name']}")
                             st.write(f"✅ **사용 재료:** {', '.join(r['matched_ingredients'])}")
                             st.write(f"🛒 **추가 필요:** {', '.join(r['missing_ingredients']) if r['missing_ingredients'] else '없음'}")
@@ -482,7 +507,7 @@ else:
                     st.markdown("#### 📅 1주일간 해먹을 수 있는 캘린더 식단")
                     refresh_weekly = st.button("🔄 1주일 식단 다시 짜기", use_container_width=True, key="btn_refresh_weekly")
                     
-                    if refresh_weekly or "weekly_plan_data" not in st.session_state:
+                    if refresh_weekly:
                         if not data_rows:
                             st.warning("냉장고가 비어있습니다!")
                         else:
@@ -509,13 +534,30 @@ else:
                                         model="llama-3.3-70b-versatile",
                                         response_format={"type": "json_object"},
                                     )
-                                    st.session_state.weekly_plan_data = json.loads(chat_completion.choices[0].message.content).get("weekly_plan", [])
+                                    new_weekly = json.loads(chat_completion.choices[0].message.content).get("weekly_plan", [])
+                                    st.session_state.weekly_plan_data = new_weekly
+                                    
+                                    st.session_state.weekly_history.insert(0, new_weekly)
+                                    if len(st.session_state.weekly_history) > 3:
+                                        st.session_state.weekly_history = st.session_state.weekly_history[:3]
+                                        
                                 except Exception as e:
-                                    st.error(f"1주일 식단 생성 중 오류 발생: {e}")
+                                    error_str = str(e)
+                                    if "429" in error_str or "Rate limit" in error_str:
+                                        st.warning("⏳ 오늘의 무료 AI 사용량 한도에 도달했습니다! 캐시된 1주일 식단을 보여드릴게요.")
+                                    else:
+                                        st.error(f"1주일 식단 생성 중 오류 발생: {e}")
                                     st.session_state.weekly_plan_data = []
 
+                    display_weekly = []
                     if "weekly_plan_data" in st.session_state and st.session_state.weekly_plan_data:
-                        for day_item in st.session_state.weekly_plan_data:
+                        display_weekly = st.session_state.weekly_plan_data
+                    elif st.session_state.weekly_history:
+                        st.info("📦 API 한도 초과로 인해 **최근 저장된 캐시 1주일 식단**을 불러왔습니다.")
+                        display_weekly = st.session_state.weekly_history[0]
+
+                    if display_weekly:
+                        for day_item in display_weekly:
                             day_name = day_item.get("day", "요일")
                             menu_name = day_item.get("menu_name", "")
                             desc = day_item.get("description", "")
@@ -532,7 +574,7 @@ else:
                     st.markdown("#### 🗓️ 한달 맞춤 식단 (메인 메뉴 리스트)")
                     refresh_monthly = st.button("🔄 한달 식단 다시 짜기", use_container_width=True, key="btn_refresh_monthly")
                     
-                    if refresh_monthly or "monthly_plan_data" not in st.session_state:
+                    if refresh_monthly:
                         if not data_rows:
                             st.warning("냉장고가 비어있습니다!")
                         else:
@@ -560,11 +602,28 @@ else:
                                         model="llama-3.3-70b-versatile",
                                         response_format={"type": "json_object"},
                                     )
-                                    st.session_state.monthly_plan_data = json.loads(chat_completion.choices[0].message.content).get("monthly_plan", [])
+                                    new_monthly = json.loads(chat_completion.choices[0].message.content).get("monthly_plan", [])
+                                    st.session_state.monthly_plan_data = new_monthly
+                                    
+                                    st.session_state.monthly_history.insert(0, new_monthly)
+                                    if len(st.session_state.monthly_history) > 3:
+                                        st.session_state.monthly_history = st.session_state.monthly_history[:3]
+                                        
                                 except Exception as e:
-                                    st.error(f"한달 식단 생성 중 오류 발생: {e}")
+                                    error_str = str(e)
+                                    if "429" in error_str or "Rate limit" in error_str:
+                                        st.warning("⏳ 오늘의 무료 AI 사용량 한도에 도달했습니다! 캐시된 한달 식단을 보여드릴게요.")
+                                    else:
+                                        st.error(f"한달 식단 생성 중 오류 발생: {e}")
                                     st.session_state.monthly_plan_data = []
 
+                    display_monthly = []
                     if "monthly_plan_data" in st.session_state and st.session_state.monthly_plan_data:
-                        for idx, menu_name in enumerate(st.session_state.monthly_plan_data, 1):
+                        display_monthly = st.session_state.monthly_plan_data
+                    elif st.session_state.monthly_history:
+                        st.info("📦 API 한도 초과로 인해 **최근 저장된 캐시 한달 식단**을 불러왔습니다.")
+                        display_monthly = st.session_state.monthly_history[0]
+
+                    if display_monthly:
+                        for idx, menu_name in enumerate(display_monthly, 1):
                             st.markdown(f"**{idx}일차:** {menu_name}")
