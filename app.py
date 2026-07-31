@@ -255,7 +255,8 @@ else:
                         st.rerun()
 
             st.divider()
-            st.subheader("📦 현재 냉장고 보관함")
+            # 제목 앞 아이콘을 눈송이(❄️)로 변경
+            st.subheader("❄️ 현재 냉장고 보관함")
             
             if len(rows) > 1:
                 data_rows = rows[1:]
@@ -307,12 +308,12 @@ else:
                             """
                             st.markdown(header_html, unsafe_allow_html=True)
                             
-                            # 순수 HTML 행 출력 (아이콘 제거 및 냉장고 느낌의 🧊 아이콘 적용)
+                            # 순수 HTML 행 출력 (식자재명 앞 아이콘을 태그(🏷️)로 변경)
                             for sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat in cat_items:
                                 row_html = f"""
                                 <div class="fridge-row">
                                     <div class="col-name">
-                                        <a href="?edit={sheet_row_idx}" target="_self">🧊 {current_ing}</a>
+                                        <a href="?edit={sheet_row_idx}" target="_self">🏷️ {current_ing}</a>
                                     </div>
                                     <div class="col-date">{short_date}</div>
                                     <div class="col-days">{days_label}</div>
