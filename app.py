@@ -381,51 +381,54 @@ else:
                 st.info("냉장고가 비어있습니다.")
 
         with tab2:
-            st.subheader("🤖 AI 맞춤 레시피 추천")
+            st.subheader("🤖 AI 맞춤 식단 및 레시피")
             
             selected_category = st.selectbox(
-                "요리 종류 선택",
-                ["전체 (상관없음)", "볶음류", "찌개/국물류", "구이/부침류", "무침/샐러드류"]
+                "요리 선호 카테고리 선택",
+                ["전체 (상관없음)", "볶음류", "찌개/국물류", "구이/부침류", "무침/샐러드류"],
+                key="ai_cat_select"
             )
-            plan_period = st.selectbox(
-                "추천 유형 선택",
-                ["단기 추천 (메인 요리 3가지)", "📅 1주일 한상차림 캘린더 식단"]
-            )
+            
+            # AI 탭 내부를 2개의 서브 탭으로 분할
+            ai_sub1, ai_sub2 = st.tabs(["🍳 한상차림 추천 5", "📅 1주일 맞춤 식단"])
             
             if not groq_api_key:
                 st.warning("⚠️ Groq API Key가 설정되지 않았습니다. 사이드바의 [설정 변경] 메뉴에서 입력해 주세요.")
             else:
-                button_label = "✨ Groq 레시피 추천 받기" if "단기" in plan_period else "📅 1주일 한상차림 생성하기"
-                if st.button(button_label, use_container_width=True):
-                    try:
-                        if len(rows) <= 1:
+                # 공통 재료 파싱 준비
+                data_rows = rows[1:] if len(rows) > 1 else []
+                ingredients_all = []
+                side_dishes = []
+                condiments = []
+                
+                for row in data_rows:
+                    if len(row) > 0 and row[0]:
+                        ing_name = row[0]
+                        cat = row[2] if len(row) > 2 else "식자재"
+                        if cat == "밑반찬":
+                            side_dishes.append(ing_name)
+                        elif cat == "양념":
+                            condiments.append(ing_name)
+                        else:
+                            ingredients_all.append(ing_name)
+                
+                main_str = ", ".join(ingredients_all) if ingredients_all else "없음"
+                side_str = ", ".join(side_dishes) if side_dishes else "없음"
+                cond_str = ", ".join(condiments) if condiments else "기본 양념"
+                
+                with ai_sub1:
+                    st.markdown("#### 🍳 현재 재료로 바로 먹을 수 있는 한상차림 추천 5")
+                    
+                    # 다른 음식 추천받기 버튼
+                    refresh_recipes = st.button("🔄 다른 음식 추천받기", use_container_width=True, key="btn_refresh_5")
+                    
+                    if refresh_recipes or True: # 최초 진입 시 또는 버튼 클릭 시 호출
+                        if not data_rows:
                             st.warning("냉장고가 비어있습니다!")
                         else:
-                            data_rows = rows[1:]
-                            ingredients_all = []
-                            side_dishes = []
-                            condiments = []
-                            
-                            for row in data_rows:
-                                if len(row) > 0 and row[0]:
-                                    ing_name = row[0]
-                                    cat = row[2] if len(row) > 2 else "식자재"
-                                    if cat == "밑반찬":
-                                        side_dishes.append(ing_name)
-                                    elif cat == "양념":
-                                        condiments.append(ing_name)
-                                    else:
-                                        ingredients_all.append(ing_name)
-                            
-                            main_str = ", ".join(ingredients_all) if ingredients_all else "없음"
-                            side_str = ", ".join(side_dishes) if side_dishes else "없음"
-                            cond_str = ", ".join(condiments) if condiments else "기본 양념"
-                            
-                            with st.spinner("AI가 한상차림을 구성하고 있습니다..."):
+                            with st.spinner("AI가 5가지 푸짐한 한상차림을 구성하고 있습니다..."):
                                 client = Groq(api_key=groq_api_key)
-                                
-                                if "단기" in plan_period:
-                                    prompt = f"""
+                                prompt = f"""
 다음은 냉장고 보유 품목이야:
 - 식자재: [{main_str}]
 - 보유 밑반찬: [{side_str}]
@@ -436,11 +439,13 @@ else:
 - 100% 순수 한국어로만 작성.
 - 중국어, 일본어, 한자 사용 금지.
 - 조리 순서는 줄바꿈(\\n) 사용.
+- **정확히 5가지**의 서로 다른 한상차림 메뉴를 추천해줘.
 - JSON 객체 형태로만 답변: {{"recipes": [{{"recipe_name": "이름", "matched_ingredients": ["재료"], "missing_ingredients": ["필요재료"], "instructions": "1. 단계\\n2. 단계"}}]}}
 """
+                                try:
                                     chat_completion = client.chat.completions.create(
                                         messages=[
-                                            {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean."},
+                                            {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean with exactly 5 recipes."},
                                             {"role": "user", "content": prompt}
                                         ],
                                         model="llama-3.3-70b-versatile",
@@ -457,9 +462,21 @@ else:
                                         st.write(f"🛒 **추가 필요:** {', '.join(r['missing_ingredients']) if r['missing_ingredients'] else '없음'}")
                                         st.markdown(f"🍳 **조리법:**\n\n{r['instructions']}")
                                         st.divider()
-                                else:
-                                    # 1주일 캘린더 식단 프롬프트 및 렌더링 로직
-                                    prompt = f"""
+                                except Exception as e:
+                                    st.error(f"레시피 생성 중 오류 발생: {e}")
+                
+                with ai_sub2:
+                    st.markdown("#### 📅 1주일간 해먹을 수 있는 캘린더 식단")
+                    
+                    refresh_weekly = st.button("🔄 1주일 식단 다시 짜기", use_container_width=True, key="btn_refresh_weekly")
+                    
+                    if refresh_weekly or True:
+                        if not data_rows:
+                            st.warning("냉장고가 비어있습니다!")
+                        else:
+                            with st.spinner("AI가 월요일부터 일요일까지 1주일 식단을 구성하고 있습니다..."):
+                                client = Groq(api_key=groq_api_key)
+                                prompt = f"""
 다음은 냉장고 보유 품목이야:
 - 식자재: [{main_str}]
 - 보유 밑반찬: [{side_str}]
@@ -471,6 +488,7 @@ else:
 - 월요일부터 일요일까지 7일간의 식단을 캘린더 형태로 구성.
 - JSON 객체 형태로만 답변: {{"weekly_plan": [{{"day": "월요일", "menu_name": "메뉴 이름", "description": "설명 및 조리 팁", "ingredients_used": ["재료1"]}}, {{"day": "화요일", ...}}, {{"day": "수요일", ...}}, {{"day": "목요일", ...}}, {{"day": "금요일", ...}}, {{"day": "토요일", ...}}, {{"day": "일요일", ...}}]}}
 """
+                                try:
                                     chat_completion = client.chat.completions.create(
                                         messages=[
                                             {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean."},
@@ -484,7 +502,6 @@ else:
                                     response_data = json.loads(result_text)
                                     weekly_plan = response_data.get("weekly_plan", [])
                                     
-                                    st.markdown("### 📅 1주일 맞춤 한상차림 캘린더")
                                     for day_item in weekly_plan:
                                         day_name = day_item.get("day", "요일")
                                         menu_name = day_item.get("menu_name", "")
@@ -496,6 +513,5 @@ else:
                                             st.write(f"📝 **조리 팁:** {desc}")
                                             st.write(f"✅ **사용 재료:** {', '.join(used_ings) if used_ings else '기본 재료'}")
                                         st.divider()
-                                        
-                    except Exception as e:
-                        st.error(f"오류 발생: {e}")
+                                except Exception as e:
+                                    st.error(f"1주일 식단 생성 중 오류 발생: {e}")
