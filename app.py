@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 각 행을 독립된 박스로 감싸고 6:2:2 비율로 정렬하는 CSS 스타일
+# 모바일 줄바꿈 방지 및 고정 픽셀 레이아웃 적용 CSS
 st.markdown("""
     <style>
     .block-container {
@@ -51,28 +51,34 @@ st.markdown("""
         box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
     
-    /* 행 내부 요소를 한 줄로 고정하고 줄바꿈 방지 */
+    /* 행 내부 요소를 한 줄로 고정하고 줄바꿈 원천 차단 */
     .fries-row div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
         width: 100% !important;
-        gap: 0px !important;
+        gap: 4px !important;
     }
     
-    /* 컬럼 비율 강제 고정 (60%, 20%, 20%) */
+    /* 1번 컬럼(식자재명): 남은 공간을 유연하게 모두 차지하되 최소 너비 0으로 설정 */
     .fries-row div[data-testid="column"]:nth-of-type(1) {
-        flex: 0 0 60% !important;
-        max-width: 60% !important;
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
     }
+    
+    /* 2번 컬럼(입고일): 75px 고정으로 줄바꿈 방지 */
     .fries-row div[data-testid="column"]:nth-of-type(2) {
-        flex: 0 0 20% !important;
-        max-width: 20% !important;
+        flex: 0 0 75px !important;
+        max-width: 75px !important;
+        min-width: 75px !important;
     }
+    
+    /* 3번 컬럼(경과일): 55px 고정으로 줄바꿈 방지 */
     .fries-row div[data-testid="column"]:nth-of-type(3) {
-        flex: 0 0 20% !important;
-        max-width: 20% !important;
+        flex: 0 0 55px !important;
+        max-width: 55px !important;
+        min-width: 55px !important;
     }
 
     /* 버튼 스타일 및 말줄임표 처리 */
@@ -91,7 +97,7 @@ st.markdown("""
         text-overflow: ellipsis !important;
     }
     div.stButton > button:hover {
-        background-color: rgba(0, 0, 0, 0.02) !important;
+        background-color: rgba(0, 0, 0, 0.03) !important;
         color: #e67e22 !important;
     }
     </style>
@@ -279,9 +285,9 @@ else:
                         
                         if cat_items:
                             st.write("")
-                            # 상단 헤더 영역 (60%, 20%, 20% 비율 및 박스 정렬)
+                            # 상단 헤더 영역
                             st.markdown('<div class="fries-row">', unsafe_allow_html=True)
-                            h1, h2, h3 = st.columns([0.6, 0.2, 0.2])
+                            h1, h2, h3 = st.columns([3, 1, 1])
                             with h1:
                                 st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>식자재명</span>", unsafe_allow_html=True)
                             with h2:
@@ -290,10 +296,10 @@ else:
                                 st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>경과일</span>", unsafe_allow_html=True)
                             st.markdown('</div>', unsafe_allow_html=True)
                             
-                            # 각 행 데이터 출력 (각각 독립된 박스로 감싸기)
+                            # 각 행 데이터 출력
                             for sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat in cat_items:
                                 st.markdown('<div class="fries-row">', unsafe_allow_html=True)
-                                r1, r2, r3 = st.columns([0.6, 0.2, 0.2])
+                                r1, r2, r3 = st.columns([3, 1, 1])
                                 with r1:
                                     if st.button(f"📦 {current_ing}", key=f"item_{sheet_row_idx}"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
