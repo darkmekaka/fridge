@@ -255,18 +255,22 @@ else:
                         st.rerun()
 
             st.divider()
-            st.subheader("❄️ 현재 냉장고 보관함")
+            
+            # 레이아웃 컬럼을 활용해 좌측엔 타이틀, 우측 공간에 정렬 필터 배치
+            col_title, col_sort = st.columns([1.2, 0.8])
+            with col_title:
+                st.subheader("❄️ 현재 냉장고 보관함")
+            with col_sort:
+                sort_option = st.selectbox(
+                    "정렬 기준", 
+                    ["경과일 많은 순 (오래된 순)", "경과일 적은 순 (최신순)", "이름순 (ㄱㄴㄷ)", "이름순 (역순)"], 
+                    key="global_sort_option",
+                    label_visibility="collapsed"
+                )
             
             if len(rows) > 1:
                 data_rows = rows[1:]
                 kst_today = get_kst_today()
-                
-                # 공통으로 적용되는 전역 정렬 기준 셀렉트박스 배치
-                sort_option = st.selectbox(
-                    "전체 정렬 기준", 
-                    ["경과일 많은 순 (오래된 순)", "경과일 적은 순 (최신순)", "이름순 (ㄱㄴㄷ)", "이름순 (역순)"], 
-                    key="global_sort_option"
-                )
                 
                 sub_tab1, sub_tab2, sub_tab3 = st.tabs(["🥩 식자재", "🥗 밑반찬", "🧂 양념류"])
                 
