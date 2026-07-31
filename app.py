@@ -125,7 +125,7 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, we
         except ValueError:
             p_dt = get_kst_today()
         edit_date_val = st.date_input("입고일 수정", value=p_dt)
-        edit_cat_val = st.selectbox("분류 변경", ["식자재", "밑반찬", "양념 및 부침가루"], index=["식자재", "밑반찬", "양념 및 부침가루"].index(current_cat) if current_cat in ["식자재", "밑반찬", "양념 및 부침가루"] else 0)
+        edit_cat_val = st.selectbox("분류 변경", ["식자재", "밑반찬", "양념"], index=["식자재", "밑반찬", "양념"].index(current_cat) if current_cat in ["식자재", "밑반찬", "양념"] else 0)
         
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
@@ -175,7 +175,7 @@ else:
                 with col_f2:
                     input_date = st.date_input("입력 날짜", value=get_kst_today())
                 with col_f3:
-                    item_category = st.selectbox("분류 선택", ["식자재", "밑반찬", "양념 및 부침가루"])
+                    item_category = st.selectbox("분류 선택", ["식자재", "밑반찬", "양념"])
                 
                 submitted = st.form_submit_button("냉장고에 담기", use_container_width=True)
                 
@@ -203,7 +203,7 @@ else:
                 categories_mapping = {
                     "식자재": sub_tab1,
                     "밑반찬": sub_tab2,
-                    "양념 및 부침가루": sub_tab3
+                    "양념": sub_tab3
                 }
                 
                 for cat_name, sub_tab_obj in categories_mapping.items():
@@ -280,7 +280,7 @@ else:
                                     cat = row[2] if len(row) > 2 else "식자재"
                                     if cat == "밑반찬":
                                         side_dishes.append(ing_name)
-                                    elif cat == "양념 및 부침가루":
+                                    elif cat == "양념":
                                         condiments.append(ing_name)
                                     else:
                                         ingredients_all.append(ing_name)
@@ -296,7 +296,7 @@ else:
 다음은 냉장고 보유 품목이야:
 - 식자재: [{main_str}]
 - 보유 밑반찬: [{side_str}]
-- 양념 및 부침가루: [{cond_str}]
+- 양념: [{cond_str}]
 선호 요리: [{selected_category}].
 
 규칙:
