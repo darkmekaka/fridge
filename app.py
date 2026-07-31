@@ -29,46 +29,41 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# Streamlit의 모바일 자동 세로 쌓임 현상을 강제로 막고 한 줄로 고정하는 CSS
+# 오른쪽 밀림 현상을 완벽히 차단하고 한 줄로 고정하는 정밀 CSS
 st.markdown("""
     <style>
-    /* 1. 전체 컨테이너 여백 최적화 */
+    /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
     .block-container {
-        padding-top: 1.5rem !important;
+        padding-top: 1.2rem !important;
         padding-bottom: 3rem !important;
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
+        padding-left: 0.4rem !important;
+        padding-right: 0.4rem !important;
         max-width: 100% !important;
         overflow-x: hidden !important;
     }
     
-    /* 2. 핵심: 모바일(폴드 외부 화면 포함)에서도 가로 블록이 세로로 꺾이지 않고 무조건 한 줄 유지 */
-    @media (max-width: 768px) {
-        div[data-testid="stHorizontalBlock"] {
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: center !important;
-            gap: 2px !important;
-        }
-        div[data-testid="column"] {
-            flex: 1 1 auto !important;
-            min-width: 0 !important;
-            width: auto !important;
-        }
-    }
-    
-    /* 3. 데스크톱 및 일반 화면에서도 가로 정렬 유지 */
+    /* 2. 핵심: 가로 블록과 컬럼이 절대 오른쪽으로 삐져나가지 않도록 강제 제한 */
     div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
+        width: 100% !important;
+        max-width: 100% !important;
         gap: 2px !important;
-    }
-    div[data-testid="column"] {
-        min-width: 0 !important;
+        box-sizing: border-box !important;
     }
     
-    /* 4. 예외 처리: 상단 입력 폼 내부는 모바일에서 세로로 떨어지도록 허용 */
+    div[data-testid="column"] {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+    }
+    
+    /* 3. 예외 처리: 상단 입력 폼 내부는 모바일에서 세로로 떨어지도록 허용 */
     @media (max-width: 576px) {
         div[data-testid="stForm"] div[data-testid="stHorizontalBlock"] {
             flex-direction: column !important;
@@ -79,18 +74,19 @@ st.markdown("""
         }
     }
     
-    /* 5. 텍스트 말줄임표 및 여백 제거 */
+    /* 4. 텍스트 말줄임표 및 여백 완전 제거 */
     .truncate-text {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: block;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        display: block !important;
+        width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         line-height: 1.2 !important;
     }
     
-    /* 6. 톱니바퀴 버튼의 박스 테두리 및 배경 완전 제거 */
+    /* 5. 톱니바퀴 버튼의 박스 테두리 및 배경 완전 제거 */
     div[data-testid="column"] button {
         background-color: transparent !important;
         border: none !important;
@@ -98,6 +94,7 @@ st.markdown("""
         padding: 0 !important;
         min-height: 0 !important;
         height: auto !important;
+        width: 100% !important;
     }
     div[data-testid="column"] button:hover {
         background-color: transparent !important;
@@ -111,7 +108,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("폴드 화면에서도 완벽하게 한 줄로 정렬되는 스마트 냉장고입니다.")
+st.write("화면 밖으로 밀리지 않는 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -297,15 +294,15 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # 가로 비율 설정 [이름, 날짜, 디데이, 톱니바퀴]
-                                r_c1, r_c2, r_c3, r_c4 = st.columns([3.5, 1.5, 1.2, 0.8])
+                                # 좁은 화면에 최적화된 밀도 있는 가로 비율 [이름, 날짜, 디데이, 톱니바퀴]
+                                r_c1, r_c2, r_c3, r_c4 = st.columns([4.2, 2.0, 1.5, 0.9])
                                 
                                 with r_c1:
-                                    st.markdown(f"<p class='truncate-text' style='font-size: 0.9rem; font-weight: bold;'>{current_ing}</p>", unsafe_allow_html=True)
+                                    st.markdown(f"<p class='truncate-text' style='font-size: 0.85rem; font-weight: bold;'>{current_ing}</p>", unsafe_allow_html=True)
                                 with r_c2:
-                                    st.markdown(f"<p class='truncate-text' style='font-size: 0.8rem; color: #666;'>{short_date}</p>", unsafe_allow_html=True)
+                                    st.markdown(f"<p class='truncate-text' style='font-size: 0.75rem; color: #666;'>{short_date}</p>", unsafe_allow_html=True)
                                 with r_c3:
-                                    st.markdown(f"<p class='truncate-text' style='font-size: 0.8rem; color: #e67e22; font-weight: bold;'>{days_label}</p>", unsafe_allow_html=True)
+                                    st.markdown(f"<p class='truncate-text' style='font-size: 0.75rem; color: #e67e22; font-weight: bold;'>{days_label}</p>", unsafe_allow_html=True)
                                 with r_c4:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
