@@ -67,6 +67,30 @@ st.markdown("""
         box-sizing: border-box;
     }
     
+    /* 유통기한 임박(D-5 이내) 붉은색 음영 스타일 */
+    .fridge-row-urgent {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        background-color: #fff5f5 !important;
+        border: 1px solid #ffcccc !important;
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 3px rgba(255,0,0,0.05);
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .fridge-row-urgent .col-name a {
+        color: #d32f2f !important;
+    }
+    
+    .fridge-row-urgent .col-days {
+        color: #d32f2f !important;
+    }
+    
     /* 각 컬럼의 비율 및 고정 폭 설정 (절대 줄바꿈 방지) */
     .col-name {
         flex: 1;
@@ -256,7 +280,7 @@ else:
                         "ingredient": new_ingredient,
                         "date": input_date.strftime("%Y-%m-%d"),
                         "category": item_category,
-                        "expiry_date": ""  # 초기 추가 시 유통기한은 빈값 또는 필요시 확장 가능
+                        "expiry_date": ""
                     }
                     res = send_post_request(web_app_url, payload)
                     if res and res.get("status") == "success":
@@ -294,7 +318,7 @@ else:
                             current_ing = row_data[0] if len(row_data) > 0 else ""
                             current_date = row_data[1] if len(row_data) > 1 else ""
                             current_cat = row_data[2] if len(row_data) > 2 else "식자재"
-                            current_expiry = row_data[3] if len(row_data) > 3 else ""  # 유통기한 데이터 바인딩
+                            current_expiry = row_data[3] if len(row_data) > 3 else ""
                             
                             if not current_cat:
                                 current_cat = "식자재"
@@ -303,6 +327,7 @@ else:
                                 clean_date_str = parse_sheet_date(current_date)
                                 clean_expiry_str = parse_sheet_date(current_expiry)
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
+                                
                                 try:
                                     parsed_date = datetime.strptime(clean_date_str, "%Y-%m-%d").date()
                                     days_passed = (kst_today - parsed_date).days + 1
@@ -311,7 +336,18 @@ else:
                                     days_passed = 0
                                     days_label = "-"
                                     
-                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str))
+                                # 유통기한 D-5 임박 여부 판별 로직
+                                is_urgent = False
+                                if clean_expiry_str:
+                                    try:
+                                        parsed_expiry = datetime.strptime(clean_expiry_str, "%Y-%m-%d").date()
+                                        expiry_days_left = (parsed_expiry - kst_today).days
+                                        if expiry_days_left <= 5:
+                                            is_urgent = True
+                                    except ValueError:
+                                        pass
+                                        
+                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str, is_urgent))
                         
                         if cat_items:
                             if "많은 순" in sort_option:
@@ -332,9 +368,12 @@ else:
                             """
                             st.markdown(header_html, unsafe_allow_html=True)
                             
-                            for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str in cat_items:
+                            for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str, is_urgent in cat_items:
+                                # 임박 여부에 따라 동적으로 CSS 클래스 선택
+                                css_class = "fridge-row-urgent" if is_urgent else "fridge-row"
+                                
                                 row_html = f"""
-                                <div class="fridge-row">
+                                <div class="{css_class}">
                                     <div class="col-name">
                                         <a href="?edit={sheet_row_idx}" target="_self">🏷️ {current_ing}</a>
                                     </div>
