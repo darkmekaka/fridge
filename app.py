@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 상단 공백 제거 및 모바일 가로 넘침 방지 CSS
+# 상단 공백 제거 및 Streamlit 모바일 세로 쌓기 강제 무력화 CSS
 st.markdown("""
     <style>
     .block-container {
@@ -43,13 +43,29 @@ st.markdown("""
         max-width: 700px;
         margin: 0 auto;
     }
-    /* 입력 폼이 화면 밖으로 튀어나가지 않도록 제한 */
     .stForm, div[data-testid="stForm"] {
         max-width: 100% !important;
         box-sizing: border-box !important;
     }
     
-    /* 오직 재료 목록 행(.row-wrapper) 내부만 한 줄 고정 및 자동 비율 조절 */
+    /* 핵심: 모바일 화면(768px 이하)에서도 컬럼이 세로로 꺾이지 않고 무조건 한 줄 유지 */
+    @media (max-width: 768px) {
+        div.row-wrapper [data-testid="stHorizontalBlock"] {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            gap: 2px !important;
+        }
+        div.row-wrapper [data-testid="column"] {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+        }
+    }
+    
+    /* 일반 화면 및 모바일 공통 한 줄 정렬 설정 */
     div.row-wrapper [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-wrap: nowrap !important;
@@ -73,7 +89,7 @@ st.markdown("""
         width: 100% !important;
     }
     
-    /* 버튼 스타일 조정 */
+    /* 톱니바퀴 버튼 스타일 조정 */
     div.row-wrapper button {
         background-color: transparent !important;
         border: none !important;
@@ -91,7 +107,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("스마트폰 화면에 최적화된 스마트 냉장고 관리 앱입니다.")
+st.write("스마트폰 화면에서도 가로 넘침 없이 완벽하게 한 줄로 정렬되는 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -277,7 +293,7 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # row-wrapper로 감싸서 해당 목록 줄만 한 줄 고정 및 자동 비율 적용
+                                # row-wrapper 클래스로 감싸서 스마트폰에서도 무조건 한 줄로 고정
                                 st.markdown("<div class='row-wrapper'>", unsafe_allow_html=True)
                                 r_c1, r_c2, r_c3, r_c4 = st.columns([3.0, 1.5, 1.2, 0.6])
                                 
