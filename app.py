@@ -5,8 +5,12 @@ import json
 from datetime import datetime, date, timedelta, timezone
 from groq import Groq
 
-# 앱 화면 설정 (모바일 최적화 넓이 설정)
-st.set_page_config(page_title="깜짝이네 냉장고", page_icon="🍳", layout="centered")
+# 앱 화면 설정 및 홈 화면 메타데이터 설정
+st.set_page_config(
+    page_title="깜짝이네 냉장고",  # 안드로이드 홈 화면에 표시될 앱 이름
+    page_icon="🍱",             # 홈 화면 아이콘으로 사용될 이모지
+    layout="centered"
+)
 
 # 한국 시간(KST, UTC+9) 기준 오늘 날짜 산출 함수
 def get_kst_today():
@@ -138,7 +142,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 제목 및 안내 문구 가운데 정렬 적용 (이모지 제거 완료)
+# 제목 및 안내 문구 가운데 정렬 적용
 st.markdown("<h1 style='text-align: center;'>깜짝이네 냉장고</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #555; margin-bottom: 2rem;'>식자재 이름을 누르면 상세 정보 및 유통기한을 확인·수정할 수 있습니다.</p>", unsafe_allow_html=True)
 
