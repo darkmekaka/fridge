@@ -51,9 +51,19 @@ def get_row_style(days_left):
     else:
         return "background-color: #ffffff; border: 1px solid #eaeaea;"
 
-# 순수 HTML/CSS 기반 모바일 완벽 방어 스타일 정의
+# 순수 HTML/CSS 기반 스타일 정의 (기본 상단 실행 애니메이션 정돈 및 모바일 최적화)
 st.markdown("""
     <style>
+    /* 기본 상단 헤더 및 실행 상태 표시 영역 깔끔하게 정돈 */
+    header {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    .stStatusWidget {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 3rem !important;
@@ -166,16 +176,17 @@ with st.sidebar.expander("🔧 설정 변경 (필요한 경우만)", expanded=Fa
 web_app_url = st.session_state.web_app_url
 groq_api_key = st.session_state.saved_groq_key
 
-# 데이터 조회 함수 (GET)
+# 데이터 조회 함수 (GET) - 원형 로딩 동그라미(st.spinner) 적용
 def fetch_sheet_data(url):
     if not url:
         return None
     try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return None
+        with st.spinner("🔄 냉장고 데이터를 불러오는 중입니다..."):
+            response = requests.get(url)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return None
     except Exception as e:
         st.error(f"데이터를 불러오는 중 오류 발생: {e}")
         return None
@@ -183,11 +194,12 @@ def fetch_sheet_data(url):
 # 데이터 변경 함수 (POST)
 def send_post_request(url, payload):
     try:
-        response = requests.post(url, json=payload)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return None
+        with st.spinner("⏳ 처리 중입니다..."):
+            response = requests.post(url, json=payload)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return None
     except Exception as e:
         st.error(f"서버 통신 중 오류 발생: {e}")
         return None
@@ -389,13 +401,11 @@ else:
                 key="ai_cat_select"
             )
             
-            # AI 탭 내부를 3개의 서브 탭으로 분할 (추가: 한달 맞춤 식단)
             ai_sub1, ai_sub2, ai_sub3 = st.tabs(["🍳 한상차림 추천 5", "📅 1주일 맞춤 식단", "🗓️ 한달 맞춤 식단"])
             
             if not groq_api_key:
                 st.warning("⚠️ Groq API Key가 설정되지 않았습니다. 사이드바의 [설정 변경] 메뉴에서 입력해 주세요.")
             else:
-                # 공통 재료 파싱 준비
                 data_rows = rows[1:] if len(rows) > 1 else []
                 ingredients_all = []
                 side_dishes = []
@@ -425,7 +435,7 @@ else:
                         if not data_rows:
                             st.warning("냉장고가 비어있습니다!")
                         else:
-                            with st.spinner("AI가 5가지 푸짐한 한상차림을 구성하고 있습니다..."):
+                            with st.spinner("🔄 AI가 5가지 푸짐한 한상차림을 구성하고 있습니다..."):
                                 client = Groq(api_key=groq_api_key)
                                 prompt = f"""
 다음은 냉장고 보유 품목이야:
@@ -473,7 +483,7 @@ else:
                         if not data_rows:
                             st.warning("냉장고가 비어있습니다!")
                         else:
-                            with st.spinner("AI가 월요일부터 일요일까지 1주일 식단을 구성하고 있습니다..."):
+                            with st.spinner("🔄 AI가 월요일부터 일요일까지 1주일 식단을 구성하고 있습니다..."):
                                 client = Groq(api_key=groq_api_key)
                                 prompt = f"""
 다음은 냉장고 보유 품목이야:
@@ -524,7 +534,7 @@ else:
                         if not data_rows:
                             st.warning("냉장고가 비어있습니다!")
                         else:
-                            with st.spinner("AI가 한달(30일)간의 메인 메뉴 리스트를 구성하고 있습니다..."):
+                            with st.spinner("🔄 AI가 한달(30일)간의 메인 메뉴 리스트를 구성하고 있습니다..."):
                                 client = Groq(api_key=groq_api_key)
                                 prompt = f"""
 다음은 냉장고 보유 품목이야:
