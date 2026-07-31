@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 깔끔한 리스트 버튼 배치를 위한 기본 스타일
+# 깔끔한 화면 여백 설정을 위한 기본 스타일
 st.markdown("""
     <style>
     .block-container {
@@ -44,7 +44,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("항목을 클릭하면 수정 및 삭제 팝업이 열립니다.")
+st.write("목록에서 관리할 항목을 클릭하면 수정 및 삭제 팝업이 열립니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -213,6 +213,7 @@ else:
                                 
                             if current_cat == cat_name:
                                 clean_date_str = parse_sheet_date(current_date)
+                                short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 try:
                                     parsed_date = datetime.strptime(clean_date_str, "%Y-%m-%d").date()
                                     days_passed = (kst_today - parsed_date).days + 1
@@ -220,17 +221,35 @@ else:
                                 except ValueError:
                                     days_label = "-"
                                     
-                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, days_label, current_cat))
+                                cat_items.append((sheet_row_idx, current_ing, short_date, days_label, current_cat))
                         
                         if cat_items:
                             st.write("")
-                            for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
-                                short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
-                                
-                                # 행 전체를 버튼으로 구성하여 클릭 시 팝업 오픈
-                                button_label = f"📦  {current_ing}    |    {short_date}    |    🔥 {days_label}"
-                                if st.button(button_label, key=f"row_btn_{sheet_row_idx}", use_container_width=True):
-                                    open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
+                            # 데이터프레임으로 변환하여 60% / 20% / 20% 비율에 맞게 출력 (식자재명, 입고일, 지난날)
+                            df_display = pd.DataFrame(cat_items, columns=["sheet_idx", "식자재명", "입고일", "지난날", "카테고리"])
+                            
+                            event = st.dataframe(
+                                df_display[["식자재명", "입고일", "지난날"]],
+                                use_container_width=True,
+                                hide_index=True,
+                                selection_mode="single-row",
+                                on_select="rerun",
+                                column_config={
+                                    "식자재명": st.column_config.TextColumn("식자재명", width="large"),
+                                    "입고일": st.column_config.TextColumn("입고일", width="medium"),
+                                    "지난날": st.column_config.TextColumn("경과일", width="small")
+                                }
+                            )
+                            
+                            # 행이 선택되었을 때 해당 항목의 팝업 띄우기
+                            selected_rows = event.selection.rows
+                            if selected_rows:
+                                selected_idx = selected_rows[0]
+                                row_info = cat_items[selected_idx]
+                                sheet_row_idx, current_ing, short_date, days_label, current_cat = row_info
+                                # 원래 날짜 포맷 복원을 위해 기존 날짜 파싱값 전달
+                                original_date_str = parse_sheet_date(data_rows[sheet_row_idx - 2][1])
+                                open_edit_dialog(sheet_row_idx, current_ing, original_date_str, current_cat, web_app_url)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
             else:
