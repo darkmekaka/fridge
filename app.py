@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 박스 테두리를 없애고 깔끔한 리스트 형태로 만들기 위한 CSS
+# 리스트 항목들을 무조건 한 줄로 고정하고 박스 테두리를 없애는 CSS
 st.markdown("""
     <style>
     .block-container {
@@ -40,17 +40,36 @@ st.markdown("""
         max-width: 100% !important;
         overflow-x: hidden !important;
     }
-    /* 버튼 박스 스타일을 완전히 제거하여 일반 텍스트 리스트처럼 보이게 처리 */
+    
+    /* 냉장고 목록 내부의 행들은 절대 줄바꿈되지 않고 한 줄로 표시 */
+    .fries-row div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        width: 100% !important;
+        gap: 4px !important;
+    }
+    
+    .fries-row div[data-testid="column"] {
+        min-width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* 버튼 스타일을 일반 텍스트처럼 깔끔하게 다듬기 */
     div.stButton > button {
         border: none !important;
         background-color: transparent !important;
         color: #222222 !important;
         font-weight: bold !important;
         text-align: left !important;
-        padding: 4px 0px !important;
+        padding: 2px 0px !important;
         margin: 0px !important;
         box-shadow: none !important;
         width: 100% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
     div.stButton > button:hover {
         background-color: rgba(0, 0, 0, 0.03) !important;
@@ -241,7 +260,8 @@ else:
                         
                         if cat_items:
                             st.write("")
-                            # 상단 헤더 (60%, 20%, 20% 비율)
+                            # 상단 헤더 영역 (60%, 20%, 20% 비율 한 줄 고정)
+                            st.markdown('<div class="fries-row">', unsafe_allow_html=True)
                             h1, h2, h3 = st.columns([0.6, 0.2, 0.2])
                             with h1:
                                 st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>식자재명</span>", unsafe_allow_html=True)
@@ -249,19 +269,22 @@ else:
                                 st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>입고일</span>", unsafe_allow_html=True)
                             with h3:
                                 st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>경과일</span>", unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
                             
                             st.markdown("<hr style='margin: 4px 0px 8px 0px; border: none; border-top: 1px solid #e0e0e0;'>", unsafe_allow_html=True)
                             
-                            # 각 행 출력 (60%, 20%, 20% 비율 및 첫 번째 칸 클릭 시 팝업 연동)
+                            # 각 행 데이터 출력 (60%, 20%, 20% 비율 및 한 줄 고정)
                             for sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat in cat_items:
+                                st.markdown('<div class="fries-row">', unsafe_allow_html=True)
                                 r1, r2, r3 = st.columns([0.6, 0.2, 0.2])
                                 with r1:
                                     if st.button(f"📦 {current_ing}", key=f"item_{sheet_row_idx}"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
                                 with r2:
-                                    st.markdown(f"<div style='padding-top: 6px; font-size: 0.9rem; color: #555;'>{short_date}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div style='font-size: 0.9rem; color: #555; white-space: nowrap;'>{short_date}</div>", unsafe_allow_html=True)
                                 with r3:
-                                    st.markdown(f"<div style='padding-top: 6px; font-size: 0.9rem; color: #e67e22; font-weight: bold;'>{days_label}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div style='font-size: 0.9rem; color: #e67e22; font-weight: bold; white-space: nowrap;'>{days_label}</div>", unsafe_allow_html=True)
+                                st.markdown('</div>', unsafe_allow_html=True)
                                 
                                 st.markdown("<hr style='margin: 2px 0px; border: none; border-top: 1px solid #f0f0f0;'>", unsafe_allow_html=True)
                         else:
