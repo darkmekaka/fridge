@@ -50,8 +50,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🍳 우리가족 스마트 냉장고")
-st.write("설정이 영구적으로 반영된 스마트 냉장고 및 AI 한상차림 관리 앱입니다.")
+st.title("🍳쑥잠이 냉장고")
+st.write("냉장고 재료로 뭘 만들수 있을까?")
 
 # 1. st.secrets에서 기본값 불러오기 (설정되어 있지 않다면 빈 문자열)
 default_gas_url = ""
