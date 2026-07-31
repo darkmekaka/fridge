@@ -112,7 +112,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("식자재 이름을 누르면 수정 및 삭제 팝업이 열립니다.")
+st.write("식자재 이름을 누르면 상세 정보 및 유통기한을 확인·수정할 수 있습니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -174,18 +174,25 @@ def send_post_request(url, payload):
         st.error(f"서버 통신 중 오류 발생: {e}")
         return None
 
-# 중앙 팝업 모달 함수 (분류: 식자재, 밑반찬, 양념)
-@st.dialog("⚙️ 품목 관리")
-def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_url):
-    st.write(f"**[{current_ing}]** 정보를 수정하거나 삭제할 수 있습니다.")
+# 중앙 팝업 모달 함수 (유통기한 확인 및 수정 기능 포함)
+@st.dialog("⚙️ 품목 상세 관리")
+def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, clean_expiry_str, web_url):
+    st.write(f"**[{current_ing}]**의 정보 및 유통기한을 관리합니다.")
     
     with st.form(key=f"modal_form_{sheet_row_idx}"):
         edit_ing_name = st.text_input("이름 수정", value=current_ing)
+        
         try:
             p_dt = datetime.strptime(clean_date_str, "%Y-%m-%d").date()
         except ValueError:
             p_dt = get_kst_today()
         edit_date_val = st.date_input("입고일 수정", value=p_dt)
+        
+        try:
+            e_dt = datetime.strptime(clean_expiry_str, "%Y-%m-%d").date() if clean_expiry_str else get_kst_today()
+        except ValueError:
+            e_dt = get_kst_today()
+        edit_expiry_val = st.date_input("유통기한 설정", value=e_dt)
         
         categories_list = ["식자재", "밑반찬", "양념"]
         cat_index = categories_list.index(current_cat) if current_cat in categories_list else 0
@@ -203,7 +210,8 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, we
                 "rowIndex": sheet_row_idx,
                 "ingredient": edit_ing_name,
                 "date": edit_date_val.strftime("%Y-%m-%d"),
-                "category": edit_cat_val
+                "category": edit_cat_val,
+                "expiry_date": edit_expiry_val.strftime("%Y-%m-%d")
             }
             res = send_post_request(web_url, payload)
             if res and res.get("status") == "success":
@@ -247,7 +255,8 @@ else:
                         "action": "append",
                         "ingredient": new_ingredient,
                         "date": input_date.strftime("%Y-%m-%d"),
-                        "category": item_category
+                        "category": item_category,
+                        "expiry_date": ""  # 초기 추가 시 유통기한은 빈값 또는 필요시 확장 가능
                     }
                     res = send_post_request(web_app_url, payload)
                     if res and res.get("status") == "success":
@@ -261,7 +270,6 @@ else:
                 data_rows = rows[1:]
                 kst_today = get_kst_today()
                 
-                # 정렬 기준 셀렉트박스를 탭 바로 위에 안정적으로 배치
                 sort_option = st.selectbox(
                     "정렬 기준 선택", 
                     ["경과일 많은 순 (오래된 순)", "경과일 적은 순 (최신순)", "이름순 (ㄱㄴㄷ)", "이름순 (역순)"], 
@@ -276,7 +284,6 @@ else:
                     "양념": sub_tab3
                 }
                 
-                # 쿼리 파라미터로 전달된 편집 요청 확인
                 edit_target_idx = st.query_params.get("edit", None)
                 
                 for cat_name, sub_tab_obj in categories_mapping.items():
@@ -287,12 +294,14 @@ else:
                             current_ing = row_data[0] if len(row_data) > 0 else ""
                             current_date = row_data[1] if len(row_data) > 1 else ""
                             current_cat = row_data[2] if len(row_data) > 2 else "식자재"
+                            current_expiry = row_data[3] if len(row_data) > 3 else ""  # 유통기한 데이터 바인딩
                             
                             if not current_cat:
                                 current_cat = "식자재"
                                 
                             if current_cat == cat_name:
                                 clean_date_str = parse_sheet_date(current_date)
+                                clean_expiry_str = parse_sheet_date(current_expiry)
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 try:
                                     parsed_date = datetime.strptime(clean_date_str, "%Y-%m-%d").date()
@@ -302,10 +311,9 @@ else:
                                     days_passed = 0
                                     days_label = "-"
                                     
-                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat))
+                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str))
                         
                         if cat_items:
-                            # 공통 선택된 정렬 기준에 따라 각 탭의 데이터 정렬
                             if "많은 순" in sort_option:
                                 cat_items = sorted(cat_items, key=lambda x: x[4], reverse=True)
                             elif "적은 순" in sort_option:
@@ -315,7 +323,6 @@ else:
                             elif "역순" in sort_option:
                                 cat_items = sorted(cat_items, key=lambda x: x[1], reverse=True)
                                 
-                            # 상단 헤더
                             header_html = f"""
                             <div class="fridge-table-header">
                                 <div class="col-name">식자재명</div>
@@ -325,8 +332,7 @@ else:
                             """
                             st.markdown(header_html, unsafe_allow_html=True)
                             
-                            # 정렬된 순서대로 HTML 행 출력
-                            for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat in cat_items:
+                            for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str in cat_items:
                                 row_html = f"""
                                 <div class="fridge-row">
                                     <div class="col-name">
@@ -338,9 +344,8 @@ else:
                                 """
                                 st.markdown(row_html, unsafe_allow_html=True)
                                 
-                                # 만약 해당 행이 클릭되어 쿼리 파라미터에 전달되었다면 다이얼로그 오픈
                                 if edit_target_idx and str(edit_target_idx) == str(sheet_row_idx):
-                                    open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
+                                    open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, clean_expiry_str, web_app_url)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
             else:
