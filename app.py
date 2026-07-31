@@ -29,22 +29,76 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 깔끔한 리스트 버튼 배치를 위한 기본 스타일
+# 각 행을 독립된 박스로 감싸고 6:2:2 비율로 정렬하는 CSS 스타일
 st.markdown("""
     <style>
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 3rem !important;
-        padding-left: 0.4rem !important;
-        padding-right: 0.4rem !important;
+        padding-left: 0.8rem !important;
+        padding-right: 0.8rem !important;
         max-width: 100% !important;
         overflow-x: hidden !important;
+    }
+    
+    /* 각 행을 감싸는 개별 박스 디자인 */
+    .fries-row {
+        background-color: #ffffff;
+        border: 1px solid #eaeaea;
+        border-radius: 10px;
+        padding: 6px 10px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    
+    /* 행 내부 요소를 한 줄로 고정하고 줄바꿈 방지 */
+    .fries-row div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        width: 100% !important;
+        gap: 0px !important;
+    }
+    
+    /* 컬럼 비율 강제 고정 (60%, 20%, 20%) */
+    .fries-row div[data-testid="column"]:nth-of-type(1) {
+        flex: 0 0 60% !important;
+        max-width: 60% !important;
+    }
+    .fries-row div[data-testid="column"]:nth-of-type(2) {
+        flex: 0 0 20% !important;
+        max-width: 20% !important;
+    }
+    .fries-row div[data-testid="column"]:nth-of-type(3) {
+        flex: 0 0 20% !important;
+        max-width: 20% !important;
+    }
+
+    /* 버튼 스타일 및 말줄임표 처리 */
+    div.stButton > button {
+        border: none !important;
+        background-color: transparent !important;
+        color: #222222 !important;
+        font-weight: bold !important;
+        text-align: left !important;
+        padding: 2px 0px !important;
+        margin: 0px !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    div.stButton > button:hover {
+        background-color: rgba(0, 0, 0, 0.02) !important;
+        color: #e67e22 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("항목을 클릭하면 수정 및 삭제 팝업이 열립니다.")
+st.write("식자재 이름을 누르면 수정 및 삭제 팝업이 열립니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -213,6 +267,7 @@ else:
                                 
                             if current_cat == cat_name:
                                 clean_date_str = parse_sheet_date(current_date)
+                                short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 try:
                                     parsed_date = datetime.strptime(clean_date_str, "%Y-%m-%d").date()
                                     days_passed = (kst_today - parsed_date).days + 1
@@ -220,17 +275,33 @@ else:
                                 except ValueError:
                                     days_label = "-"
                                     
-                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, days_label, current_cat))
+                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat))
                         
                         if cat_items:
                             st.write("")
-                            for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
-                                short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
-                                
-                                # 행 전체를 버튼으로 구성하여 클릭 시 팝업 오픈
-                                button_label = f"📦  {current_ing}    |    {short_date}    |    🔥 {days_label}"
-                                if st.button(button_label, key=f"row_btn_{sheet_row_idx}", use_container_width=True):
-                                    open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
+                            # 상단 헤더 영역 (60%, 20%, 20% 비율 및 박스 정렬)
+                            st.markdown('<div class="fries-row">', unsafe_allow_html=True)
+                            h1, h2, h3 = st.columns([0.6, 0.2, 0.2])
+                            with h1:
+                                st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>식자재명</span>", unsafe_allow_html=True)
+                            with h2:
+                                st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>입고일</span>", unsafe_allow_html=True)
+                            with h3:
+                                st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>경과일</span>", unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
+                            
+                            # 각 행 데이터 출력 (각각 독립된 박스로 감싸기)
+                            for sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat in cat_items:
+                                st.markdown('<div class="fries-row">', unsafe_allow_html=True)
+                                r1, r2, r3 = st.columns([0.6, 0.2, 0.2])
+                                with r1:
+                                    if st.button(f"📦 {current_ing}", key=f"item_{sheet_row_idx}"):
+                                        open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
+                                with r2:
+                                    st.markdown(f"<div style='font-size: 0.9rem; color: #555; white-space: nowrap;'>{short_date}</div>", unsafe_allow_html=True)
+                                with r3:
+                                    st.markdown(f"<div style='font-size: 0.9rem; color: #e67e22; font-weight: bold; white-space: nowrap;'>{days_label}</div>", unsafe_allow_html=True)
+                                st.markdown('</div>', unsafe_allow_html=True)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
             else:
