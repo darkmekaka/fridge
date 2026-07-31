@@ -29,6 +29,30 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
+# 남은 일수(D-7 ~ D-1 이하)에 따른 점진적 붉은 음영 스타일 생성 함수
+def get_row_style(days_left):
+    if days_left is None:
+        return "background-color: #ffffff; border: 1px solid #eaeaea;"
+    
+    if days_left <= 0:
+        # 당일 또는 지남 (가장 진한 경고 붉은색)
+        return "background-color: #ffcccc; border: 1px solid #ff9999;"
+    elif days_left == 1:
+        return "background-color: #ffd6d6; border: 1px solid #ffadad;"
+    elif days_left == 2:
+        return "background-color: #ffe0e0; border: 1px solid #ffb8b8;"
+    elif days_left == 3:
+        return "background-color: #ffebeb; border: 1px solid #ffc2c2;"
+    elif days_left == 4:
+        return "background-color: #fff0f0; border: 1px solid #ffd1d1;"
+    elif days_left == 5:
+        return "background-color: #fff5f5; border: 1px solid #ffe0e0;"
+    elif days_left <= 7:
+        return "background-color: #fffafa; border: 1px solid #ffeded;"
+    else:
+        # 8일 이상 남은 경우 기본 흰색
+        return "background-color: #ffffff; border: 1px solid #eaeaea;"
+
 # 순수 HTML/CSS 기반 모바일 완벽 방어 스타일 정의
 st.markdown("""
     <style>
@@ -41,7 +65,7 @@ st.markdown("""
         overflow-x: hidden !important;
     }
     
-    /* 냉장고 목록 커스텀 카드 컨테이너 */
+    /* 냉장고 목록 커스텀 카드 컨테이너 헤더 */
     .fridge-table-header {
         display: flex;
         align-items: center;
@@ -52,43 +76,18 @@ st.markdown("""
         font-weight: bold;
     }
     
+    /* 기본 행 스타일 틀 */
     .fridge-row {
         display: flex;
         flex-direction: row;
         flex-wrap: nowrap;
         align-items: center;
-        background-color: #ffffff;
-        border: 1px solid #eaeaea;
         border-radius: 10px;
         padding: 10px 12px;
         margin-bottom: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         width: 100%;
         box-sizing: border-box;
-    }
-    
-    /* 유통기한 임박(D-5 이내) 붉은색 음영 스타일 */
-    .fridge-row-urgent {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        align-items: center;
-        background-color: #fff5f5 !important;
-        border: 1px solid #ffcccc !important;
-        border-radius: 10px;
-        padding: 10px 12px;
-        margin-bottom: 8px;
-        box-shadow: 0 1px 3px rgba(255,0,0,0.05);
-        width: 100%;
-        box-sizing: border-box;
-    }
-    
-    .fridge-row-urgent .col-name a {
-        color: #d32f2f !important;
-    }
-    
-    .fridge-row-urgent .col-days {
-        color: #d32f2f !important;
     }
     
     /* 각 컬럼의 비율 및 고정 폭 설정 (절대 줄바꿈 방지) */
@@ -336,18 +335,16 @@ else:
                                     days_passed = 0
                                     days_label = "-"
                                     
-                                # 유통기한 D-5 임박 여부 판별 로직
-                                is_urgent = False
+                                # 유통기한 남은 일수 계산
+                                expiry_days_left = None
                                 if clean_expiry_str:
                                     try:
                                         parsed_expiry = datetime.strptime(clean_expiry_str, "%Y-%m-%d").date()
                                         expiry_days_left = (parsed_expiry - kst_today).days
-                                        if expiry_days_left <= 5:
-                                            is_urgent = True
                                     except ValueError:
                                         pass
                                         
-                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str, is_urgent))
+                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str, expiry_days_left))
                         
                         if cat_items:
                             if "많은 순" in sort_option:
@@ -368,12 +365,12 @@ else:
                             """
                             st.markdown(header_html, unsafe_allow_html=True)
                             
-                            for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str, is_urgent in cat_items:
-                                # 임박 여부에 따라 동적으로 CSS 클래스 선택
-                                css_class = "fridge-row-urgent" if is_urgent else "fridge-row"
+                            for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str, expiry_days_left in cat_items:
+                                # 남은 일수에 따른 인라인 그라데이션 스타일 동적 생성
+                                inline_style = get_row_style(expiry_days_left)
                                 
                                 row_html = f"""
-                                <div class="{css_class}">
+                                <div class="fridge-row" style="{inline_style}">
                                     <div class="col-name">
                                         <a href="?edit={sheet_row_idx}" target="_self">🏷️ {current_ing}</a>
                                     </div>
