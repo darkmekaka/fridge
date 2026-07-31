@@ -255,12 +255,18 @@ else:
                         st.rerun()
 
             st.divider()
-            # 제목 앞 아이콘을 눈송이(❄️)로 변경
             st.subheader("❄️ 현재 냉장고 보관함")
             
             if len(rows) > 1:
                 data_rows = rows[1:]
                 kst_today = get_kst_today()
+                
+                # 공통으로 적용되는 전역 정렬 기준 셀렉트박스 배치
+                sort_option = st.selectbox(
+                    "전체 정렬 기준", 
+                    ["경과일 많은 순 (오래된 순)", "경과일 적은 순 (최신순)", "이름순 (ㄱㄴㄷ)", "이름순 (역순)"], 
+                    key="global_sort_option"
+                )
                 
                 sub_tab1, sub_tab2, sub_tab3 = st.tabs(["🥩 식자재", "🥗 밑반찬", "🧂 양념류"])
                 
@@ -293,11 +299,22 @@ else:
                                     days_passed = (kst_today - parsed_date).days + 1
                                     days_label = f"{days_passed}일"
                                 except ValueError:
+                                    days_passed = 0
                                     days_label = "-"
                                     
-                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat))
+                                cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat))
                         
                         if cat_items:
+                            # 공통 선택된 정렬 기준에 따라 각 탭의 데이터 정렬
+                            if "많은 순" in sort_option:
+                                cat_items = sorted(cat_items, key=lambda x: x[4], reverse=True)
+                            elif "적은 순" in sort_option:
+                                cat_items = sorted(cat_items, key=lambda x: x[4], reverse=False)
+                            elif "ㄱㄴㄷ" in sort_option:
+                                cat_items = sorted(cat_items, key=lambda x: x[1])
+                            elif "역순" in sort_option:
+                                cat_items = sorted(cat_items, key=lambda x: x[1], reverse=True)
+                                
                             # 상단 헤더
                             header_html = f"""
                             <div class="fridge-table-header">
@@ -308,8 +325,8 @@ else:
                             """
                             st.markdown(header_html, unsafe_allow_html=True)
                             
-                            # 순수 HTML 행 출력 (식자재명 앞 아이콘을 태그(🏷️)로 변경)
-                            for sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat in cat_items:
+                            # 정렬된 순서대로 HTML 행 출력
+                            for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat in cat_items:
                                 row_html = f"""
                                 <div class="fridge-row">
                                     <div class="col-name">
