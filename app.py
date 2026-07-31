@@ -29,20 +29,30 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 상단 공백 제거 및 모바일 가독성 최적화 CSS
+# 상단 공백 제거 및 모바일 한 줄 정렬 최적화 CSS
 st.markdown("""
     <style>
     .block-container {
         padding-top: 2rem !important;
         padding-bottom: 3rem !important;
     }
+    /* 모바일 환경에서도 컬럼들이 세로로 떨어지지 않고 무조건 한 줄로 유지되도록 설정 */
+    [data-testid="stHorizontalBlock"] {
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+    }
+    [data-testid="column"] {
+        min-width: unset !important;
+        flex: 1 1 auto !important;
+    }
+    /* 버튼 스타일 조정 */
     div[data-testid="stHorizontalBlock"] button {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
         outline: none !important;
-        padding: 4px !important;
-        font-size: 1.2rem !important;
+        padding: 2px !important;
+        font-size: 1.1rem !important;
     }
     div[data-testid="stHorizontalBlock"] button:hover {
         background-color: rgba(0, 0, 0, 0.05) !important;
@@ -55,7 +65,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("카테고리와 타이틀이 깔끔하게 정돈된 스마트 냉장고 관리 앱입니다.")
+st.write("모바일 화면에서도 한 줄로 깔끔하게 정렬되는 스마트 냉장고 관리 앱입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -239,13 +249,16 @@ else:
                         if cat_items:
                             st.write("")
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
-                                r_c1, r_c2, r_c3 = st.columns([2.5, 2, 0.8])
+                                # 4개의 컬럼으로 나누어 식자재명, 입고일, 경과일, 톱니바퀴 버튼을 완벽한 한 줄에 배치
+                                r_c1, r_c2, r_c3, r_c4 = st.columns([2.2, 1.8, 1.2, 0.6])
                                 
                                 with r_c1:
-                                    st.markdown(f"<span style='font-size: 1.05rem; font-weight: bold;'>{current_ing}</span>", unsafe_allow_html=True)
+                                    st.markdown(f"<span style='font-size: 0.95rem; font-weight: bold;'>{current_ing}</span>", unsafe_allow_html=True)
                                 with r_c2:
-                                    st.markdown(f"<span style='font-size: 0.85rem; color: #555;'>📅 {clean_date_str} <br>⏱️ {days_label}</span>", unsafe_allow_html=True)
+                                    st.markdown(f"<span style='font-size: 0.8rem; color: #555;'>{clean_date_str}</span>", unsafe_allow_html=True)
                                 with r_c3:
+                                    st.markdown(f"<span style='font-size: 0.8rem; color: #e67e22; font-weight: bold;'>{days_label}</span>", unsafe_allow_html=True)
+                                with r_c4:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
                                         
