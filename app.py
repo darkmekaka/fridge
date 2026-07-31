@@ -29,22 +29,30 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 상단 공백 제거 및 모바일 한 줄 밀착 정렬 CSS
+# 상단 공백 제거 및 화면 크기에 따른 자동 비율 조절 CSS
 st.markdown("""
     <style>
     .block-container {
         padding-top: 2rem !important;
         padding-bottom: 3rem !important;
     }
-    /* 모바일 환경에서 가로 넘침 없이 한 줄로 밀착 정렬 */
+    /* 화면 크기에 맞춰 자동으로 유연하게 줄어들도록 Flexbox 설정 강화 */
     [data-testid="stHorizontalBlock"] {
+        display: flex !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 2px !important;
+        width: 100% !important;
+        gap: 4px !important;
     }
     [data-testid="column"] {
-        min-width: unset !important;
-        flex: 1 1 auto !important;
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+    /* 긴 텍스트가 화면 밖으로 넘치지 않고 말줄임표 처리되도록 설정 */
+    .truncate-text {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
     /* 버튼 스타일 조정 */
     div[data-testid="stHorizontalBlock"] button {
@@ -53,7 +61,7 @@ st.markdown("""
         box-shadow: none !important;
         outline: none !important;
         padding: 0px !important;
-        font-size: 1rem !important;
+        font-size: 0.95rem !important;
     }
     div[data-testid="stHorizontalBlock"] button:hover {
         background-color: rgba(0, 0, 0, 0.05) !important;
@@ -66,7 +74,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("모바일 화면에서 가로 넘침 없이 한눈에 들어오는 스마트 냉장고 관리 앱입니다.")
+st.write("화면 크기에 따라 자동으로 비율이 조절되는 스마트 냉장고 관리 앱입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -250,17 +258,17 @@ else:
                         if cat_items:
                             st.write("")
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
-                                # 모바일 화면 너비에 맞게 날짜를 MM-DD 형태로 축약하여 화면 밖으로 넘어가지 않도록 최적화
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                r_c1, r_c2, r_c3, r_c4 = st.columns([2.2, 1.3, 1.0, 0.4])
+                                # 화면 비율에 따라 유연하게 줄어들도록 가중치 부여 (합계: 3.0 + 1.5 + 1.2 + 0.6)
+                                r_c1, r_c2, r_c3, r_c4 = st.columns([3.0, 1.5, 1.2, 0.6])
                                 
                                 with r_c1:
-                                    st.markdown(f"<span style='font-size: 0.9rem; font-weight: bold;'>{current_ing}</span>", unsafe_allow_html=True)
+                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.9rem; font-weight: bold;'>{current_ing}</div>", unsafe_allow_html=True)
                                 with r_c2:
-                                    st.markdown(f"<span style='font-size: 0.75rem; color: #666;'>{short_date}</span>", unsafe_allow_html=True)
+                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.75rem; color: #666;'>{short_date}</div>", unsafe_allow_html=True)
                                 with r_c3:
-                                    st.markdown(f"<span style='font-size: 0.75rem; color: #e67e22; font-weight: bold;'>{days_label}</span>", unsafe_allow_html=True)
+                                    st.markdown(f"<div class='truncate-text' style='font-size: 0.75rem; color: #e67e22; font-weight: bold;'>{days_label}</div>", unsafe_allow_html=True)
                                 with r_c4:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
