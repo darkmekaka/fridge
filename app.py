@@ -32,7 +32,6 @@ def parse_sheet_date(date_val):
 # 모바일 가독성 및 버튼 스타일 최적화 CSS
 st.markdown("""
     <style>
-    /* 버튼 스타일 다듬기 */
     div[data-testid="stHorizontalBlock"] button {
         background-color: transparent !important;
         border: none !important;
@@ -44,7 +43,6 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"] button:hover {
         background-color: rgba(0, 0, 0, 0.05) !important;
     }
-    /* 모바일 화면 여백 및 카드 느낌 부여 */
     .stApp {
         max-width: 700px;
         margin: 0 auto;
@@ -53,26 +51,38 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 우리가족 스마트 냉장고")
-st.write("모바일 환경에 최적화된 스마트 냉장고 및 AI 한상차림 관리 앱입니다.")
+st.write("설정이 영구적으로 반영된 스마트 냉장고 및 AI 한상차림 관리 앱입니다.")
 
-# 세션 상태 초기화
+# 1. st.secrets에서 기본값 불러오기 (설정되어 있지 않다면 빈 문자열)
+default_gas_url = ""
+default_groq_key = ""
+
+try:
+    if "GAS_WEB_APP_URL" in st.secrets:
+        default_gas_url = st.secrets["GAS_WEB_APP_URL"]
+    if "GROQ_API_KEY" in st.secrets:
+        default_groq_key = st.secrets["GROQ_API_KEY"]
+except Exception:
+    pass
+
+# 세션 상태 초기화 (secrets 값이 있으면 우선 적용)
 if "web_app_url" not in st.session_state:
-    st.session_state.web_app_url = ""
+    st.session_state.web_app_url = default_gas_url
 if "saved_groq_key" not in st.session_state:
-    st.session_state.saved_groq_key = ""
+    st.session_state.saved_groq_key = default_groq_key
 
-# 사이드바: 설정 관리 폼
-st.sidebar.header("🔧 설정 관리")
-with st.sidebar.form("config_form"):
-    temp_url = st.text_input("GAS 웹 앱 URL", value=st.session_state.web_app_url, help="구글 앱스 스크립트 웹 앱 URL을 입력하세요.")
-    temp_groq_key = st.text_input("Groq API Key 입력", type="password", value=st.session_state.saved_groq_key, help="Groq API Key를 입력하세요.")
-    
-    save_btn = st.form_submit_button("💾 설정 저장하기", use_container_width=True)
-    
-    if save_btn:
-        st.session_state.web_app_url = temp_url
-        st.session_state.saved_groq_key = temp_groq_key
-        st.success("설정이 저장되었습니다!")
+# 사이드바: 설정 관리 (필요할 때만 변경할 수 있도록 유지)
+with st.sidebar.expander("🔧 설정 변경 (필요한 경우만)", expanded=False):
+    with st.form("config_form"):
+        temp_url = st.text_input("GAS 웹 앱 URL", value=st.session_state.web_app_url)
+        temp_groq_key = st.text_input("Groq API Key 입력", type="password", value=st.session_state.saved_groq_key)
+        
+        save_btn = st.form_submit_button("💾 설정 업데이트", use_container_width=True)
+        
+        if save_btn:
+            st.session_state.web_app_url = temp_url
+            st.session_state.saved_groq_key = temp_groq_key
+            st.success("설정이 업데이트되었습니다!")
 
 web_app_url = st.session_state.web_app_url
 groq_api_key = st.session_state.saved_groq_key
@@ -148,7 +158,7 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, we
 
 # 메인 로직 실행
 if not web_app_url:
-    st.warning("⚠️ 사이드바에 구글 앱스 스크립트(GAS) 웹 앱 URL을 입력하고 **[설정 저장하기]**를 눌러주세요.")
+    st.warning("⚠️ GAS 웹 앱 URL이 설정되지 않았습니다. 사이드바의 [설정 변경] 메뉴에서 입력해 주세요.")
 else:
     rows = fetch_sheet_data(web_app_url)
     
@@ -222,7 +232,6 @@ else:
                         if cat_items:
                             st.write("")
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
-                                # 모바일에서 글자가 찌그러지지 않도록 레이아웃 비율 최적화
                                 r_c1, r_c2, r_c3 = st.columns([2.5, 2, 0.8])
                                 
                                 with r_c1:
@@ -252,7 +261,7 @@ else:
             )
             
             if not groq_api_key:
-                st.warning("⚠️ 사이드바에 Groq API Key를 입력해주세요.")
+                st.warning("⚠️ Groq API Key가 설정되지 않았습니다. 사이드바의 [설정 변경] 메뉴에서 입력해 주세요.")
             else:
                 button_label = "✨ Groq 레시피 추천 받기" if "단기" in plan_period else "📅 1주일 한상차림 생성하기"
                 if st.button(button_label, use_container_width=True):
