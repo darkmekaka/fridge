@@ -6,7 +6,7 @@ from datetime import datetime, date, timedelta, timezone
 from groq import Groq
 
 # 앱 화면 설정 (모바일 최적화 넓이 설정)
-st.set_page_config(page_title="쑥잠이 냉장고", page_icon="🍳", layout="centered")
+st.set_page_config(page_title="깜짝이네 냉장고", page_icon="🍳", layout="centered")
 
 # 한국 시간(KST, UTC+9) 기준 오늘 날짜 산출 함수
 def get_kst_today():
@@ -129,7 +129,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🍳 쑥잠이 냉장고")
+st.title("🍳 깜짝이네 냉장고")
 st.write("식자재 이름을 누르면 상세 정보 및 유통기한을 확인·수정할 수 있습니다.")
 
 # st.secrets에서 기본값 불러오기
@@ -389,8 +389,8 @@ else:
                 key="ai_cat_select"
             )
             
-            # AI 탭 내부를 2개의 서브 탭으로 분할
-            ai_sub1, ai_sub2 = st.tabs(["🍳 한상차림 추천 5", "📅 1주일 맞춤 식단"])
+            # AI 탭 내부를 3개의 서브 탭으로 분할 (추가: 한달 맞춤 식단)
+            ai_sub1, ai_sub2, ai_sub3 = st.tabs(["🍳 한상차림 추천 5", "📅 1주일 맞춤 식단", "🗓️ 한달 맞춤 식단"])
             
             if not groq_api_key:
                 st.warning("⚠️ Groq API Key가 설정되지 않았습니다. 사이드바의 [설정 변경] 메뉴에서 입력해 주세요.")
@@ -419,10 +419,9 @@ else:
                 with ai_sub1:
                     st.markdown("#### 🍳 현재 재료로 바로 먹을 수 있는 한상차림 추천 5")
                     
-                    # 다른 음식 추천받기 버튼
                     refresh_recipes = st.button("🔄 다른 음식 추천받기", use_container_width=True, key="btn_refresh_5")
                     
-                    if refresh_recipes or True: # 최초 진입 시 또는 버튼 클릭 시 호출
+                    if refresh_recipes or True:
                         if not data_rows:
                             st.warning("냉장고가 비어있습니다!")
                         else:
@@ -515,3 +514,47 @@ else:
                                         st.divider()
                                 except Exception as e:
                                     st.error(f"1주일 식단 생성 중 오류 발생: {e}")
+
+                with ai_sub3:
+                    st.markdown("#### 🗓️ 한달 맞춤 식단 (메인 메뉴 리스트)")
+                    
+                    refresh_monthly = st.button("🔄 한달 식단 다시 짜기", use_container_width=True, key="btn_refresh_monthly")
+                    
+                    if refresh_monthly or True:
+                        if not data_rows:
+                            st.warning("냉장고가 비어있습니다!")
+                        else:
+                            with st.spinner("AI가 한달(30일)간의 메인 메뉴 리스트를 구성하고 있습니다..."):
+                                client = Groq(api_key=groq_api_key)
+                                prompt = f"""
+다음은 냉장고 보유 품목이야:
+- 식자재: [{main_str}]
+- 보유 밑반찬: [{side_str}]
+- 양념: [{cond_str}]
+선호 요리: [{selected_category}].
+
+규칙:
+- 100% 순수 한국어로만 작성.
+- 중국어, 일본어, 한자 사용 금지.
+- 한달(30일)간 해먹을 수 있는 **메인 메뉴 이름만** 순서대로 정확히 30개 나열해줘.
+- JSON 객체 형태로만 답변: {{"monthly_plan": ["메인메뉴1", "메인메뉴2", ..., "메인메뉴30"]}}
+"""
+                                try:
+                                    chat_completion = client.chat.completions.create(
+                                        messages=[
+                                            {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean with a list of 30 menu names."},
+                                            {"role": "user", "content": prompt}
+                                        ],
+                                        model="llama-3.3-70b-versatile",
+                                        response_format={"type": "json_object"},
+                                    )
+                                    
+                                    result_text = chat_completion.choices[0].message.content
+                                    response_data = json.loads(result_text)
+                                    monthly_plan = response_data.get("monthly_plan", [])
+                                    
+                                    for idx, menu_name in enumerate(monthly_plan, 1):
+                                        st.markdown(f"**{idx}일차:** {menu_name}")
+                                        
+                                except Exception as e:
+                                    st.error(f"한달 식단 생성 중 오류 발생: {e}")
