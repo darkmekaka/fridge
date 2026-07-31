@@ -35,7 +35,6 @@ def get_row_style(days_left):
         return "background-color: #ffffff; border: 1px solid #eaeaea;"
     
     if days_left <= 0:
-        # 당일 또는 지남 (가장 진한 경고 붉은색)
         return "background-color: #ffcccc; border: 1px solid #ff9999;"
     elif days_left == 1:
         return "background-color: #ffd6d6; border: 1px solid #ffadad;"
@@ -50,7 +49,6 @@ def get_row_style(days_left):
     elif days_left <= 7:
         return "background-color: #fffafa; border: 1px solid #ffeded;"
     else:
-        # 8일 이상 남은 경우 기본 흰색
         return "background-color: #ffffff; border: 1px solid #eaeaea;"
 
 # 순수 HTML/CSS 기반 모바일 완벽 방어 스타일 정의
@@ -65,7 +63,6 @@ st.markdown("""
         overflow-x: hidden !important;
     }
     
-    /* 냉장고 목록 커스텀 카드 컨테이너 헤더 */
     .fridge-table-header {
         display: flex;
         align-items: center;
@@ -76,7 +73,6 @@ st.markdown("""
         font-weight: bold;
     }
     
-    /* 기본 행 스타일 틀 */
     .fridge-row {
         display: flex;
         flex-direction: row;
@@ -90,7 +86,6 @@ st.markdown("""
         box-sizing: border-box;
     }
     
-    /* 각 컬럼의 비율 및 고정 폭 설정 (절대 줄바꿈 방지) */
     .col-name {
         flex: 1;
         min-width: 0;
@@ -335,7 +330,6 @@ else:
                                     days_passed = 0
                                     days_label = "-"
                                     
-                                # 유통기한 남은 일수 계산
                                 expiry_days_left = None
                                 if clean_expiry_str:
                                     try:
@@ -366,7 +360,6 @@ else:
                             st.markdown(header_html, unsafe_allow_html=True)
                             
                             for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str, expiry_days_left in cat_items:
-                                # 남은 일수에 따른 인라인 그라데이션 스타일 동적 생성
                                 inline_style = get_row_style(expiry_days_left)
                                 
                                 row_html = f"""
@@ -431,7 +424,8 @@ else:
                             with st.spinner("AI가 한상차림을 구성하고 있습니다..."):
                                 client = Groq(api_key=groq_api_key)
                                 
-                                prompt = f"""
+                                if "단기" in plan_period:
+                                    prompt = f"""
 다음은 냉장고 보유 품목이야:
 - 식자재: [{main_str}]
 - 보유 밑반찬: [{side_str}]
@@ -444,25 +438,64 @@ else:
 - 조리 순서는 줄바꿈(\\n) 사용.
 - JSON 객체 형태로만 답변: {{"recipes": [{{"recipe_name": "이름", "matched_ingredients": ["재료"], "missing_ingredients": ["필요재료"], "instructions": "1. 단계\\n2. 단계"}}]}}
 """
-                                chat_completion = client.chat.completions.create(
-                                    messages=[
-                                        {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean."},
-                                        {"role": "user", "content": prompt}
-                                    ],
-                                    model="llama-3.3-70b-versatile",
-                                    response_format={"type": "json_object"},
-                                )
-                                
-                                result_text = chat_completion.choices[0].message.content
-                                response_data = json.loads(result_text)
-                                recipes = response_data.get("recipes", [])
-                                
-                                for i, r in enumerate(recipes, 1):
-                                    st.markdown(f"### 🏆 {i}. {r['recipe_name']}")
-                                    st.write(f"✅ **사용 재료:** {', '.join(r['matched_ingredients'])}")
-                                    st.write(f"🛒 **추가 필요:** {', '.join(r['missing_ingredients']) if r['missing_ingredients'] else '없음'}")
-                                    st.markdown(f"🍳 **조리법:**\n\n{r['instructions']}")
-                                    st.divider()
+                                    chat_completion = client.chat.completions.create(
+                                        messages=[
+                                            {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean."},
+                                            {"role": "user", "content": prompt}
+                                        ],
+                                        model="llama-3.3-70b-versatile",
+                                        response_format={"type": "json_object"},
+                                    )
+                                    
+                                    result_text = chat_completion.choices[0].message.content
+                                    response_data = json.loads(result_text)
+                                    recipes = response_data.get("recipes", [])
+                                    
+                                    for i, r in enumerate(recipes, 1):
+                                        st.markdown(f"### 🏆 {i}. {r['recipe_name']}")
+                                        st.write(f"✅ **사용 재료:** {', '.join(r['matched_ingredients'])}")
+                                        st.write(f"🛒 **추가 필요:** {', '.join(r['missing_ingredients']) if r['missing_ingredients'] else '없음'}")
+                                        st.markdown(f"🍳 **조리법:**\n\n{r['instructions']}")
+                                        st.divider()
+                                else:
+                                    # 1주일 캘린더 식단 프롬프트 및 렌더링 로직
+                                    prompt = f"""
+다음은 냉장고 보유 품목이야:
+- 식자재: [{main_str}]
+- 보유 밑반찬: [{side_str}]
+- 양념: [{cond_str}]
+선호 요리: [{selected_category}].
+
+규칙:
+- 100% 순수 한국어로만 작성.
+- 월요일부터 일요일까지 7일간의 식단을 캘린더 형태로 구성.
+- JSON 객체 형태로만 답변: {{"weekly_plan": [{{"day": "월요일", "menu_name": "메뉴 이름", "description": "설명 및 조리 팁", "ingredients_used": ["재료1"]}}, {{"day": "화요일", ...}}, {{"day": "수요일", ...}}, {{"day": "목요일", ...}}, {{"day": "금요일", ...}}, {{"day": "토요일", ...}}, {{"day": "일요일", ...}}]}}
+"""
+                                    chat_completion = client.chat.completions.create(
+                                        messages=[
+                                            {"role": "system", "content": "You are a helpful culinary assistant that outputs only valid JSON in Korean."},
+                                            {"role": "user", "content": prompt}
+                                        ],
+                                        model="llama-3.3-70b-versatile",
+                                        response_format={"type": "json_object"},
+                                    )
+                                    
+                                    result_text = chat_completion.choices[0].message.content
+                                    response_data = json.loads(result_text)
+                                    weekly_plan = response_data.get("weekly_plan", [])
+                                    
+                                    st.markdown("### 📅 1주일 맞춤 한상차림 캘린더")
+                                    for day_item in weekly_plan:
+                                        day_name = day_item.get("day", "요일")
+                                        menu_name = day_item.get("menu_name", "")
+                                        desc = day_item.get("description", "")
+                                        used_ings = day_item.get("ingredients_used", [])
+                                        
+                                        with st.expander(f"🗓️ {day_name} : {menu_name}", expanded=True):
+                                            st.write(f"🍳 **추천 메뉴:** {menu_name}")
+                                            st.write(f"📝 **조리 팁:** {desc}")
+                                            st.write(f"✅ **사용 재료:** {', '.join(used_ings) if used_ings else '기본 재료'}")
+                                        st.divider()
                                         
                     except Exception as e:
                         st.error(f"오류 발생: {e}")
