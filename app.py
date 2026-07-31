@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 톱니바퀴 아이콘 완벽 수평 정렬을 위한 정밀 CSS
+# 좌우 컬럼 여백 및 완벽한 수평 정렬을 위한 정밀 CSS
 st.markdown("""
     <style>
     /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
@@ -42,7 +42,7 @@ st.markdown("""
         overflow-x: hidden !important;
     }
     
-    /* 2. 가로 블록 수직 중앙 정렬 및 상하 간격 압축 */
+    /* 2. 가로 블록 및 컬럼 정밀 수직 중앙 정렬 */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -51,7 +51,7 @@ st.markdown("""
         width: 100% !important;
         max-width: 100% !important;
         gap: 6px !important;
-        margin-bottom: -10px !important;
+        margin-bottom: -6px !important;
         box-sizing: border-box !important;
     }
     
@@ -62,13 +62,10 @@ st.markdown("""
         padding: 0 !important;
         display: flex !important;
         align-items: center !important;
+        height: 100% !important;
     }
     
-    /* 3. 품목 관리 톱니바퀴 버튼 완벽 수평 정렬 및 스타일 재정의 */
-    div[data-testid="column"]:has(button[title="품목 관리"]) {
-        justify-content: center !important;
-        align-items: center !important;
-    }
+    /* 3. 품목 관리 톱니바퀴 버튼 여백/크기 완벽 동기화 */
     button[title="품목 관리"] {
         background-color: transparent !important;
         border: none !important;
@@ -76,12 +73,11 @@ st.markdown("""
         padding: 0px !important;
         margin: 0px !important;
         min-height: unset !important;
-        height: auto !important;
+        height: 24px !important;
         width: 100% !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        transform: translateY(2px) !important; /* 텍스트와 높낮이 완벽 일치를 위한 미세 조정 */
     }
     button[title="품목 관리"] p, 
     button[title="품목 관리"] span,
@@ -95,6 +91,7 @@ st.markdown("""
         justify-content: center !important;
         margin: 0 !important;
         padding: 0 !important;
+        line-height: 1 !important;
     }
     button[title="품목 관리"]:hover p,
     button[title="품목 관리"]:hover span,
@@ -119,7 +116,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("톱니바퀴 수평 정렬이 완벽하게 맞춰진 스마트 냉장고입니다.")
+st.write("좌우 여백과 수평 정렬이 완벽하게 맞춰진 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -302,7 +299,7 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # 2개 컬럼 구조 (완벽한 수평 정렬 비율)
+                                # 2개 컬럼 구조 (여백 및 정렬 완벽 동기화)
                                 c_info, c_btn = st.columns([5.8, 0.9])
                                 
                                 # 왼쪽 컬럼: 식자재명 폰트 크기 및 수평 정렬
@@ -315,7 +312,7 @@ else:
                                         </div>
                                     """, unsafe_allow_html=True)
                                     
-                                # 오른쪽 컬럼: 수평 정렬 및 미세 조정된 톱니바퀴 버튼 배치
+                                # 오른쪽 컬럼: 완벽 수평 정렬된 톱니바퀴 버튼 배치
                                 with c_btn:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
