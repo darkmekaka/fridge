@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 모바일 줄바꿈 방지 및 고정 픽셀 레이아웃 적용 CSS
+# 스트림릿 모바일 컬럼 쌓임 현상을 완벽히 방어하는 CSS 스타일
 st.markdown("""
     <style>
     .block-container {
@@ -51,7 +51,7 @@ st.markdown("""
         box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
     
-    /* 행 내부 요소를 한 줄로 고정하고 줄바꿈 원천 차단 */
+    /* PC 및 기본 환경에서의 가로 정렬 설정 */
     .fries-row div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -61,24 +61,43 @@ st.markdown("""
         gap: 4px !important;
     }
     
-    /* 1번 컬럼(식자재명): 남은 공간을 유연하게 모두 차지하되 최소 너비 0으로 설정 */
     .fries-row div[data-testid="column"]:nth-of-type(1) {
         flex: 1 1 auto !important;
         min-width: 0 !important;
     }
-    
-    /* 2번 컬럼(입고일): 75px 고정으로 줄바꿈 방지 */
     .fries-row div[data-testid="column"]:nth-of-type(2) {
         flex: 0 0 75px !important;
         max-width: 75px !important;
         min-width: 75px !important;
     }
-    
-    /* 3번 컬럼(경과일): 55px 고정으로 줄바꿈 방지 */
     .fries-row div[data-testid="column"]:nth-of-type(3) {
         flex: 0 0 55px !important;
         max-width: 55px !important;
         min-width: 55px !important;
+    }
+
+    /* 스트림릿 모바일 자동 세로 배치(Media Query) 강제 무력화 */
+    @media (max-width: 640px) {
+        .fries-row div[data-testid="stHorizontalBlock"] {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+        }
+        .fries-row div[data-testid="column"]:nth-of-type(1) {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            max-width: none !important;
+        }
+        .fries-row div[data-testid="column"]:nth-of-type(2) {
+            flex: 0 0 75px !important;
+            min-width: 75px !important;
+            max-width: 75px !important;
+        }
+        .fries-row div[data-testid="column"]:nth-of-type(3) {
+            flex: 0 0 55px !important;
+            min-width: 55px !important;
+            max-width: 55px !important;
+        }
     }
 
     /* 버튼 스타일 및 말줄임표 처리 */
@@ -392,3 +411,5 @@ else:
                                         
                     except Exception as e:
                         st.error(f"오류 발생: {e}")
+
+미디어 쿼리를 무력화하여 스트림릿 컬럼이 세로로 떨어지는 현상을 잡은 이 코드를 적용해 보셨을 때, 모바일 환경이나 창을 줄인 상태에서 원하는 대로 한 줄 배치가 잘 유지되는지 확인해 보시겠어요?
