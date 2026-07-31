@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 모바일 밀림 방지 및 깔끔한 정렬을 위한 CSS
+# 모바일 밀림 방지 및 세련된 UI 스타일링을 위한 CSS
 st.markdown("""
     <style>
     /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
@@ -61,19 +61,7 @@ st.markdown("""
         padding: 0 !important;
     }
     
-    /* 3. 예외 처리: 상단 입력 폼 내부는 모바일에서 세로로 떨어지도록 허용 */
-    @media (max-width: 576px) {
-        div[data-testid="stForm"] div[data-testid="stHorizontalBlock"] {
-            flex-direction: column !important;
-            gap: 10px !important;
-        }
-        div[data-testid="stForm"] div[data-testid="column"] {
-            width: 100% !important;
-            max-width: 100% !important;
-        }
-    }
-    
-    /* 4. 톱니바퀴 버튼의 박스 테두리 및 배경 완전 제거 */
+    /* 3. 톱니바퀴 버튼 디자인 세련되게 변경 (흐리고 부드러운 아이콘) */
     div[data-testid="column"] button {
         background-color: transparent !important;
         border: none !important;
@@ -82,10 +70,14 @@ st.markdown("""
         min-height: 0 !important;
         height: auto !important;
         width: 100% !important;
+        color: #999999 !important;
+        opacity: 0.65 !important;
+        transition: opacity 0.2s ease, color 0.2s ease !important;
     }
     div[data-testid="column"] button:hover {
         background-color: transparent !important;
-        color: #888 !important;
+        color: #333333 !important;
+        opacity: 1.0 !important;
     }
     div[data-testid="column"] button p {
         margin: 0 !important;
@@ -95,7 +87,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("HTML 구조화 방식으로 화면 밀림을 해결한 스마트 냉장고입니다.")
+st.write("입력창 크기 통일과 세련된 버튼 스타일이 적용된 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -216,13 +208,11 @@ else:
         
         with tab1:
             st.subheader("🛒 식자재 및 반찬 추가하기")
+            # 💡 입력 박스들의 가로 사이즈를 100% 동일하게 맞추기 위해 세로로 정렬
             with st.form("add_ingredient_form", clear_on_submit=True):
                 new_ingredient = st.text_input("품목 이름 (예: 대파, 참기름)")
-                col_f2, col_f3 = st.columns(2)
-                with col_f2:
-                    input_date = st.date_input("입력 날짜", value=get_kst_today())
-                with col_f3:
-                    item_category = st.selectbox("분류 선택", ["식자재", "밑반찬", "양념"])
+                input_date = st.date_input("입력 날짜", value=get_kst_today())
+                item_category = st.selectbox("분류 선택", ["식자재", "밑반찬", "양념"])
                 
                 submitted = st.form_submit_button("냉장고에 담기", use_container_width=True)
                 
@@ -281,20 +271,20 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # 💡 핵심: 2개 컬럼만 사용하여 Streamlit의 다중 컬럼 버그 원천 차단
+                                # 2개 컬럼 구조로 수평 정렬 보장
                                 c_info, c_btn = st.columns([5.5, 1.0])
                                 
-                                # 왼쪽 컬럼: HTML Flexbox로 이름, 날짜, 디데이를 한 줄에 단단히 고정
+                                # 왼쪽 컬럼: 폰트 크기 3포인트 확대(1.1rem) 및 수평 정렬
                                 with c_info:
                                     st.markdown(f"""
                                         <div style="display: flex; align-items: center; width: 100%; gap: 6px; overflow: hidden; margin: 0; padding: 0;">
-                                            <div style="flex: 2.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem; font-weight: bold;">{current_ing}</div>
-                                            <div style="flex: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.75rem; color: #666;">{short_date}</div>
-                                            <div style="flex: 1.0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.75rem; color: #e67e22; font-weight: bold;">{days_label}</div>
+                                            <div style="flex: 2.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.1rem; font-weight: bold;">{current_ing}</div>
+                                            <div style="flex: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem; color: #666;">{short_date}</div>
+                                            <div style="flex: 1.0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem; color: #e67e22; font-weight: bold;">{days_label}</div>
                                         </div>
                                     """, unsafe_allow_html=True)
                                     
-                                # 오른쪽 컬럼: 톱니바퀴 버튼 배치
+                                # 오른쪽 컬럼: 세련되게 바뀐 톱니바퀴 버튼 배치
                                 with c_btn:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
