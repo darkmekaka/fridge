@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 스트림릿 모바일 컬럼 쌓임 현상을 완벽히 방어하는 CSS 스타일
+# 순수 HTML/CSS 기반 모바일 완벽 방어 스타일 정의
 st.markdown("""
     <style>
     .block-container {
@@ -41,83 +41,72 @@ st.markdown("""
         overflow-x: hidden !important;
     }
     
-    /* 각 행을 감싸는 개별 박스 디자인 */
-    .fries-row {
+    /* 냉장고 목록 커스텀 카드 컨테이너 */
+    .fridge-table-header {
+        display: flex;
+        align-items: center;
+        padding: 4px 12px;
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+        color: #888;
+        font-weight: bold;
+    }
+    
+    .fridge-row {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
         background-color: #ffffff;
         border: 1px solid #eaeaea;
         border-radius: 10px;
-        padding: 6px 10px;
+        padding: 10px 12px;
         margin-bottom: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        width: 100%;
+        box-sizing: border-box;
     }
     
-    /* PC 및 기본 환경에서의 가로 정렬 설정 */
-    .fries-row div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        width: 100% !important;
-        gap: 4px !important;
+    /* 각 컬럼의 비율 및 고정 폭 설정 (절대 줄바꿈 방지) */
+    .col-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     
-    .fries-row div[data-testid="column"]:nth-of-type(1) {
-        flex: 1 1 auto !important;
-        min-width: 0 !important;
+    .col-name a {
+        color: #222222;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 0.95rem;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
-    .fries-row div[data-testid="column"]:nth-of-type(2) {
-        flex: 0 0 75px !important;
-        max-width: 75px !important;
-        min-width: 75px !important;
+    .col-name a:hover {
+        color: #e67e22;
     }
-    .fries-row div[data-testid="column"]:nth-of-type(3) {
-        flex: 0 0 55px !important;
-        max-width: 55px !important;
-        min-width: 55px !important;
+    
+    .col-date {
+        flex: 0 0 75px;
+        width: 75px;
+        text-align: center;
+        font-size: 0.9rem;
+        color: #555;
+        white-space: nowrap;
     }
-
-    /* 스트림릿 모바일 자동 세로 배치(Media Query) 강제 무력화 */
-    @media (max-width: 640px) {
-        .fries-row div[data-testid="stHorizontalBlock"] {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-        }
-        .fries-row div[data-testid="column"]:nth-of-type(1) {
-            flex: 1 1 auto !important;
-            min-width: 0 !important;
-            max-width: none !important;
-        }
-        .fries-row div[data-testid="column"]:nth-of-type(2) {
-            flex: 0 0 75px !important;
-            min-width: 75px !important;
-            max-width: 75px !important;
-        }
-        .fries-row div[data-testid="column"]:nth-of-type(3) {
-            flex: 0 0 55px !important;
-            min-width: 55px !important;
-            max-width: 55px !important;
-        }
-    }
-
-    /* 버튼 스타일 및 말줄임표 처리 */
-    div.stButton > button {
-        border: none !important;
-        background-color: transparent !important;
-        color: #222222 !important;
-        font-weight: bold !important;
-        text-align: left !important;
-        padding: 2px 0px !important;
-        margin: 0px !important;
-        box-shadow: none !important;
-        width: 100% !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-    div.stButton > button:hover {
-        background-color: rgba(0, 0, 0, 0.03) !important;
-        color: #e67e22 !important;
+    
+    .col-days {
+        flex: 0 0 55px;
+        width: 55px;
+        text-align: right;
+        font-size: 0.9rem;
+        color: #e67e22;
+        font-weight: bold;
+        white-space: nowrap;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -219,6 +208,7 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, we
             res = send_post_request(web_url, payload)
             if res and res.get("status") == "success":
                 st.success("수정 완료!")
+                st.query_params.clear()
                 st.rerun()
                 
         if del_clicked:
@@ -229,6 +219,7 @@ def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, we
             res = send_post_request(web_url, payload)
             if res and res.get("status") == "success":
                 st.success("삭제 완료!")
+                st.query_params.clear()
                 st.rerun()
 
 # 메인 로직 실행
@@ -278,6 +269,9 @@ else:
                     "양념": sub_tab3
                 }
                 
+                # 쿼리 파라미터로 전달된 편집 요청 확인
+                edit_target_idx = st.query_params.get("edit", None)
+                
                 for cat_name, sub_tab_obj in categories_mapping.items():
                     with sub_tab_obj:
                         cat_items = []
@@ -303,30 +297,32 @@ else:
                                 cat_items.append((sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat))
                         
                         if cat_items:
-                            st.write("")
-                            # 상단 헤더 영역
-                            st.markdown('<div class="fries-row">', unsafe_allow_html=True)
-                            h1, h2, h3 = st.columns([3, 1, 1])
-                            with h1:
-                                st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>식자재명</span>", unsafe_allow_html=True)
-                            with h2:
-                                st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>입고일</span>", unsafe_allow_html=True)
-                            with h3:
-                                st.markdown("<span style='font-size: 0.85rem; color: #888; font-weight: bold;'>경과일</span>", unsafe_allow_html=True)
-                            st.markdown('</div>', unsafe_allow_html=True)
+                            # 상단 헤더
+                            header_html = f"""
+                            <div class="fridge-table-header">
+                                <div class="col-name">식자재명</div>
+                                <div class="col-date">입고일</div>
+                                <div class="col-days">경과일</div>
+                            </div>
+                            """
+                            st.markdown(header_html, unsafe_allow_html=True)
                             
-                            # 각 행 데이터 출력
+                            # 순수 HTML 행 출력 (클릭 시 쿼리 파라미터를 통해 다이얼로그 호출)
                             for sheet_row_idx, current_ing, clean_date_str, short_date, days_label, current_cat in cat_items:
-                                st.markdown('<div class="fries-row">', unsafe_allow_html=True)
-                                r1, r2, r3 = st.columns([3, 1, 1])
-                                with r1:
-                                    if st.button(f"📦 {current_ing}", key=f"item_{sheet_row_idx}"):
-                                        open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
-                                with r2:
-                                    st.markdown(f"<div style='font-size: 0.9rem; color: #555; white-space: nowrap;'>{short_date}</div>", unsafe_allow_html=True)
-                                with r3:
-                                    st.markdown(f"<div style='font-size: 0.9rem; color: #e67e22; font-weight: bold; white-space: nowrap;'>{days_label}</div>", unsafe_allow_html=True)
-                                st.markdown('</div>', unsafe_allow_html=True)
+                                row_html = f"""
+                                <div class="fridge-row">
+                                    <div class="col-name">
+                                        <a href="?edit={sheet_row_idx}" target="_self">📦 {current_ing}</a>
+                                    </div>
+                                    <div class="col-date">{short_date}</div>
+                                    <div class="col-days">{days_label}</div>
+                                </div>
+                                """
+                                st.markdown(row_html, unsafe_allow_html=True)
+                                
+                                # 만약 해당 행이 클릭되어 쿼리 파라미터에 전달되었다면 다이얼로그 오픈
+                                if edit_target_idx and str(edit_target_idx) == str(sheet_row_idx):
+                                    open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
             else:
