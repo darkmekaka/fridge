@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 리스트 항목들을 무조건 한 줄로 고정하고 박스 테두리를 없애는 CSS
+# 화면 크기와 상관없이 무조건 한 줄로 고정하고 비율을 강제하는 CSS
 st.markdown("""
     <style>
     .block-container {
@@ -41,22 +41,31 @@ st.markdown("""
         overflow-x: hidden !important;
     }
     
-    /* 냉장고 목록 내부의 행들은 절대 줄바꿈되지 않고 한 줄로 표시 */
+    /* 행을 무조건 한 줄로 고정하고 줄바꿈 방지 */
     .fries-row div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
         width: 100% !important;
-        gap: 4px !important;
+        gap: 0px !important;
     }
     
-    .fries-row div[data-testid="column"] {
-        min-width: 0 !important;
-        overflow: hidden !important;
+    /* 각 컬럼의 너비를 60%, 20%, 20%로 강제 고정 */
+    .fries-row div[data-testid="column"]:nth-of-type(1) {
+        flex: 0 0 60% !important;
+        max-width: 60% !important;
+    }
+    .fries-row div[data-testid="column"]:nth-of-type(2) {
+        flex: 0 0 20% !important;
+        max-width: 20% !important;
+    }
+    .fries-row div[data-testid="column"]:nth-of-type(3) {
+        flex: 0 0 20% !important;
+        max-width: 20% !important;
     }
 
-    /* 버튼 스타일을 일반 텍스트처럼 깔끔하게 다듬기 */
+    /* 버튼 스타일 및 말줄임표 처리 */
     div.stButton > button {
         border: none !important;
         background-color: transparent !important;
