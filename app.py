@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 톱니바퀴 하단 정렬을 위한 정밀 CSS
+# 텍스트는 중앙, 톱니바퀴만 하단 정렬을 위한 정밀 CSS
 st.markdown("""
     <style>
     /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
@@ -42,12 +42,12 @@ st.markdown("""
         overflow-x: hidden !important;
     }
     
-    /* 2. 가로 블록 및 컬럼 하단 정렬(flex-end) 적용 */
+    /* 2. 가로 블록 기본 중앙 정렬 설정 */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        align-items: flex-end !important;
+        align-items: center !important;
         width: 100% !important;
         max-width: 100% !important;
         gap: 6px !important;
@@ -61,10 +61,17 @@ st.markdown("""
         overflow: hidden !important;
         padding: 0 !important;
         display: flex !important;
-        align-items: flex-end !important;
+        align-items: center !important;
     }
     
-    /* 3. 품목 관리 톱니바퀴 버튼 하단 맞춤 스타일 */
+    /* 3. 톱니바퀴 버튼이 있는 오른쪽 컬럼만 하단(flex-end)으로 정렬 */
+    div[data-testid="column"]:has(button[title="품목 관리"]) {
+        align-self: flex-end !important;
+        align-items: flex-end !important;
+        padding-bottom: 1px !important;
+    }
+    
+    /* 4. 품목 관리 톱니바퀴 버튼 스타일 재정의 */
     button[title="품목 관리"] {
         background-color: transparent !important;
         border: none !important;
@@ -99,7 +106,7 @@ st.markdown("""
         opacity: 1.0 !important;
     }
     
-    /* 4. 예외 처리: 상단 입력 폼 내부는 모바일에서 세로로 떨어지도록 허용 */
+    /* 5. 예외 처리: 상단 입력 폼 내부는 모바일에서 세로로 떨어지도록 허용 */
     @media (max-width: 576px) {
         div[data-testid="stForm"] div[data-testid="stHorizontalBlock"] {
             flex-direction: column !important;
@@ -115,7 +122,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("하단 정렬이 적용된 스마트 냉장고입니다.")
+st.write("톱니바퀴 하단 정렬이 적용된 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -298,20 +305,20 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # 2개 컬럼 구조 (하단 정렬 적용)
+                                # 2개 컬럼 구조
                                 c_info, c_btn = st.columns([5.8, 0.9])
                                 
-                                # 왼쪽 컬럼: 식자재명 폰트 크기 및 정렬
+                                # 왼쪽 컬럼: 식자재명 폰트 크기 및 중앙 정렬 유지
                                 with c_info:
                                     st.markdown(f"""
-                                        <div style="display: flex; align-items: flex-end; width: 100%; gap: 6px; overflow: hidden; margin: 0; padding: 0; line-height: 1.2;">
+                                        <div style="display: flex; align-items: center; width: 100%; gap: 6px; overflow: hidden; margin: 0; padding: 0; line-height: 1.2;">
                                             <div style="flex: 2.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.15rem; font-weight: bold; color: #222;">{current_ing}</div>
                                             <div style="flex: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem; color: #666;">{short_date}</div>
                                             <div style="flex: 1.0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem; color: #e67e22; font-weight: bold;">{days_label}</div>
                                         </div>
                                     """, unsafe_allow_html=True)
                                     
-                                # 오른쪽 컬럼: 하단 정렬된 톱니바퀴 버튼 배치
+                                # 오른쪽 컬럼: 하단 정렬이 적용된 톱니바퀴 버튼 배치
                                 with c_btn:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
