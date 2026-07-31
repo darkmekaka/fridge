@@ -51,7 +51,7 @@ def get_row_style(days_left):
     else:
         return "background-color: #ffffff; border: 1px solid #eaeaea;"
 
-# 순수 HTML/CSS 기반 스타일 정의 (가로 정렬 표 디자인 복원)
+# 순수 HTML/CSS 기반 스타일 정의
 st.markdown("""
     <style>
     header {
@@ -89,7 +89,7 @@ st.markdown("""
         align-items: center;
         border-radius: 10px;
         padding: 10px 12px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         width: 100%;
         box-sizing: border-box;
@@ -101,20 +101,6 @@ st.markdown("""
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-    }
-    
-    .col-name a {
-        color: #222222;
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 0.95rem;
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    .col-name a:hover {
-        color: #e67e22;
     }
     
     .col-date {
@@ -139,7 +125,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 깜짝이네 냉장고")
-st.write("식자재 이름을 누르면 상세 정보 및 유통기한을 확인·수정할 수 있습니다.")
+st.write("식자재 이름을 누르면 아래에 수정 및 관리 패널이 열립니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -158,6 +144,8 @@ if "web_app_url" not in st.session_state:
     st.session_state.web_app_url = default_gas_url
 if "saved_groq_key" not in st.session_state:
     st.session_state.saved_groq_key = default_groq_key
+if "edit_target" not in st.session_state:
+    st.session_state.edit_target = None
 
 # 사이드바: 설정 변경 메뉴
 with st.sidebar.expander("🔧 설정 변경 (필요한 경우만)", expanded=False):
@@ -202,62 +190,6 @@ def send_post_request(url, payload):
     except Exception as e:
         st.error(f"서버 통신 중 오류 발생: {e}")
         return None
-
-# 중앙 팝업 모달 함수 (유통기한 확인 및 수정 기능 포함)
-@st.dialog("⚙️ 품목 상세 관리")
-def open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, clean_expiry_str, web_url):
-    st.write(f"**[{current_ing}]**의 정보 및 유통기한을 관리합니다.")
-    
-    with st.form(key=f"modal_form_{sheet_row_idx}"):
-        edit_ing_name = st.text_input("이름 수정", value=current_ing)
-        
-        try:
-            p_dt = datetime.strptime(clean_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            p_dt = get_kst_today()
-        edit_date_val = st.date_input("입고일 수정", value=p_dt)
-        
-        try:
-            e_dt = datetime.strptime(clean_expiry_str, "%Y-%m-%d").date() if clean_expiry_str else get_kst_today()
-        except ValueError:
-            e_dt = get_kst_today()
-        edit_expiry_val = st.date_input("유통기한 설정", value=e_dt)
-        
-        categories_list = ["식자재", "밑반찬", "양념"]
-        cat_index = categories_list.index(current_cat) if current_cat in categories_list else 0
-        edit_cat_val = st.selectbox("분류 변경", categories_list, index=cat_index)
-        
-        col_btn1, col_btn2 = st.columns(2)
-        with col_btn1:
-            save_clicked = st.form_submit_button("💾 수정 저장", use_container_width=True)
-        with col_btn2:
-            del_clicked = st.form_submit_button("🗑️ 삭제하기", use_container_width=True)
-            
-        if save_clicked:
-            payload = {
-                "action": "update",
-                "rowIndex": sheet_row_idx,
-                "ingredient": edit_ing_name,
-                "date": edit_date_val.strftime("%Y-%m-%d"),
-                "category": edit_cat_val,
-                "expiry_date": edit_expiry_val.strftime("%Y-%m-%d")
-            }
-            res = send_post_request(web_url, payload)
-            if res and res.get("status") == "success":
-                st.success("수정 완료!")
-                st.query_params.clear()
-                st.rerun()
-                
-        if del_clicked:
-            payload = {
-                "action": "delete",
-                "rowIndex": sheet_row_idx
-            }
-            res = send_post_request(web_url, payload)
-            if res and res.get("status") == "success":
-                st.success("삭제 완료!")
-                st.query_params.clear()
-                st.rerun()
 
 # 메인 로직 실행
 if not web_app_url:
@@ -312,8 +244,6 @@ else:
                     "밑반찬": sub_tab2,
                     "양념": sub_tab3
                 }
-                
-                edit_target_idx = st.query_params.get("edit", None)
                 
                 for cat_name, sub_tab_obj in categories_mapping.items():
                     with sub_tab_obj:
@@ -373,19 +303,89 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, short_date, days_passed, days_label, current_cat, clean_expiry_str, expiry_days_left in cat_items:
                                 inline_style = get_row_style(expiry_days_left)
                                 
-                                row_html = f"""
-                                <div class="fridge-row" style="{inline_style}">
-                                    <div class="col-name">
-                                        <a href="?edit={sheet_row_idx}" target="_self">🏷️ {current_ing}</a>
+                                st.markdown(f"""
+                                    <div class="fridge-row" style="{inline_style}">
+                                        <div class="col-name" style="font-weight: bold; color: #222;">🏷️ {current_ing}</div>
+                                        <div class="col-date">{short_date}</div>
+                                        <div class="col-days">{days_label}</div>
                                     </div>
-                                    <div class="col-date">{short_date}</div>
-                                    <div class="col-days">{days_label}</div>
-                                </div>
-                                """
-                                st.markdown(row_html, unsafe_allow_html=True)
+                                """, unsafe_allow_html=True)
                                 
-                                if edit_target_idx and str(edit_target_idx) == str(sheet_row_idx):
-                                    open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, clean_expiry_str, web_app_url)
+                                # 수정 열기/닫기 토글 버튼
+                                btn_label = f"🔼 [{current_ing}] 수정 닫기" if st.session_state.edit_target == sheet_row_idx else f"⚙️ [{current_ing}] 상세 관리 및 수정"
+                                if st.button(btn_label, key=f"toggle_btn_{sheet_row_idx}", use_container_width=True):
+                                    if st.session_state.edit_target == sheet_row_idx:
+                                        st.session_state.edit_target = None
+                                    else:
+                                        st.session_state.edit_target = sheet_row_idx
+                                    st.rerun()
+                                
+                                # 해당 항목이 수정 상태일 때 바로 아래에 인라인 수정 폼 표시
+                                if st.session_state.edit_target == sheet_row_idx:
+                                    with st.container():
+                                        st.markdown(f"""
+                                            <div style="background-color: #fcfcfc; border: 2px solid #e67e22; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                                                <p style="font-weight: bold; color: #e67e22; margin-bottom: 8px;">⚙️ [{current_ing}] 정보 수정 및 유통기한 설정</p>
+                                        """, unsafe_allow_html=True)
+                                        
+                                        with st.form(key=f"inline_form_{sheet_row_idx}"):
+                                            edit_ing_name = st.text_input("이름 수정", value=current_ing)
+                                            
+                                            try:
+                                                p_dt = datetime.strptime(clean_date_str, "%Y-%m-%d").date()
+                                            except ValueError:
+                                                p_dt = get_kst_today()
+                                            edit_date_val = st.date_input("입고일 수정", value=p_dt, key=f"date_{sheet_row_idx}")
+                                            
+                                            try:
+                                                e_dt = datetime.strptime(clean_expiry_str, "%Y-%m-%d").date() if clean_expiry_str else get_kst_today()
+                                            except ValueError:
+                                                e_dt = get_kst_today()
+                                            edit_expiry_val = st.date_input("유통기한 설정", value=e_dt, key=f"expiry_{sheet_row_idx}")
+                                            
+                                            categories_list = ["식자재", "밑반찬", "양념"]
+                                            cat_index = categories_list.index(current_cat) if current_cat in categories_list else 0
+                                            edit_cat_val = st.selectbox("분류 변경", categories_list, index=cat_index, key=f"cat_{sheet_row_idx}")
+                                            
+                                            col_b1, col_b2, col_b3 = st.columns(3)
+                                            with col_b1:
+                                                save_clicked = st.form_submit_button("💾 수정 저장", use_container_width=True)
+                                            with col_b2:
+                                                del_clicked = st.form_submit_button("🗑️ 삭제하기", use_container_width=True)
+                                            with col_b3:
+                                                cancel_clicked = st.form_submit_button("❌ 닫기", use_container_width=True)
+                                                
+                                            if save_clicked:
+                                                payload = {
+                                                    "action": "update",
+                                                    "rowIndex": sheet_row_idx,
+                                                    "ingredient": edit_ing_name,
+                                                    "date": edit_date_val.strftime("%Y-%m-%d"),
+                                                    "category": edit_cat_val,
+                                                    "expiry_date": edit_expiry_val.strftime("%Y-%m-%d")
+                                                }
+                                                res = send_post_request(web_app_url, payload)
+                                                if res and res.get("status") == "success":
+                                                    st.success("수정 완료!")
+                                                    st.session_state.edit_target = None
+                                                    st.rerun()
+                                                    
+                                            if del_clicked:
+                                                payload = {
+                                                    "action": "delete",
+                                                    "rowIndex": sheet_row_idx
+                                                }
+                                                res = send_post_request(web_app_url, payload)
+                                                if res and res.get("status") == "success":
+                                                    st.success("삭제 완료!")
+                                                    st.session_state.edit_target = None
+                                                    st.rerun()
+                                                    
+                                            if cancel_clicked:
+                                                st.session_state.edit_target = None
+                                                st.rerun()
+                                        
+                                        st.markdown("</div>", unsafe_allow_html=True)
                         else:
                             st.info(f"등록된 [{cat_name}] 항목이 없습니다.")
             else:
@@ -429,9 +429,6 @@ else:
                     st.markdown("#### 🍳 현재 재료로 바로 먹을 수 있는 한상차림 추천 5")
                     
                     refresh_recipes = st.button("🔄 다른 음식 추천받기", use_container_width=True, key="btn_refresh_5")
-                    
-                    if refresh_recipes:
-                        st.session_state.pop("recipes_cache", None)
                     
                     if not data_rows:
                         st.warning("냉장고가 비어있습니다!")
