@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 오른쪽 밀림 현상을 완벽히 차단하고 한 줄로 고정하는 정밀 CSS
+# 컬럼 폭을 퍼센트로 강제 고정하여 오른쪽 밀림을 완벽히 차단하는 CSS
 st.markdown("""
     <style>
     /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
@@ -42,7 +42,7 @@ st.markdown("""
         overflow-x: hidden !important;
     }
     
-    /* 2. 핵심: 가로 블록과 컬럼이 절대 오른쪽으로 삐져나가지 않도록 강제 제한 */
+    /* 2. 가로 블록 기본 설정 */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -54,16 +54,33 @@ st.markdown("""
         box-sizing: border-box !important;
     }
     
-    div[data-testid="column"] {
-        flex: 1 1 auto !important;
+    /* 3. 핵심: 목록의 4개 컬럼 폭을 퍼센트로 강제 고정하여 화면 밖으로 나가는 것 방지 */
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(1) {
+        flex: 0 0 44% !important;
+        max-width: 44% !important;
         min-width: 0 !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
+        padding: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
+        flex: 0 0 23% !important;
+        max-width: 23% !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) {
+        flex: 0 0 18% !important;
+        max-width: 18% !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(4) {
+        flex: 0 0 15% !important;
+        max-width: 15% !important;
+        min-width: 0 !important;
         padding: 0 !important;
     }
     
-    /* 3. 예외 처리: 상단 입력 폼 내부는 모바일에서 세로로 떨어지도록 허용 */
+    /* 4. 예외 처리: 상단 입력 폼 내부는 모바일에서 세로로 떨어지도록 허용 */
     @media (max-width: 576px) {
         div[data-testid="stForm"] div[data-testid="stHorizontalBlock"] {
             flex-direction: column !important;
@@ -71,10 +88,11 @@ st.markdown("""
         }
         div[data-testid="stForm"] div[data-testid="column"] {
             width: 100% !important;
+            max-width: 100% !important;
         }
     }
     
-    /* 4. 텍스트 말줄임표 및 여백 완전 제거 */
+    /* 5. 텍스트 말줄임표 및 여백 완전 제거 */
     .truncate-text {
         white-space: nowrap !important;
         overflow: hidden !important;
@@ -86,7 +104,7 @@ st.markdown("""
         line-height: 1.2 !important;
     }
     
-    /* 5. 톱니바퀴 버튼의 박스 테두리 및 배경 완전 제거 */
+    /* 6. 톱니바퀴 버튼의 박스 테두리 및 배경 완전 제거 */
     div[data-testid="column"] button {
         background-color: transparent !important;
         border: none !important;
@@ -108,7 +126,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("화면 밖으로 밀리지 않는 스마트 냉장고입니다.")
+st.write("컬럼 폭 고정으로 화면 밀림이 해결된 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -294,8 +312,8 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # 좁은 화면에 최적화된 밀도 있는 가로 비율 [이름, 날짜, 디데이, 톱니바퀴]
-                                r_c1, r_c2, r_c3, r_c4 = st.columns([4.2, 2.0, 1.5, 0.9])
+                                # 컬럼 생성 (퍼센트 비율은 CSS에서 강제 제어됨)
+                                r_c1, r_c2, r_c3, r_c4 = st.columns([4.4, 2.3, 1.8, 1.5])
                                 
                                 with r_c1:
                                     st.markdown(f"<p class='truncate-text' style='font-size: 0.85rem; font-weight: bold;'>{current_ing}</p>", unsafe_allow_html=True)
