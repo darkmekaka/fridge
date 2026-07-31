@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 상단 공백 제거 및 오직 보관함 목록 행(.inventory-row-container)에만 적용되는 완벽한 한 줄 격리 CSS
+# 상단 공백 제거 및 보관함 목록 가로 한 줄 강제 고정 CSS (박스 및 세로 꺾임 방지)
 st.markdown("""
     <style>
     .block-container {
@@ -44,7 +44,7 @@ st.markdown("""
         margin: 0 auto;
     }
     
-    /* 상단 입력 폼 등은 전혀 건드리지 않고, 오직 보관함 목록 행에만 적용되는 격리 스타일 (박스 생성 원인 원천 차단) */
+    /* 보관함 목록 행 전용 격리 컨테이너 (박스 테두리 원천 차단) */
     .inventory-row-container {
         background: transparent !important;
         border: none !important;
@@ -53,7 +53,9 @@ st.markdown("""
         margin: 0 !important;
         width: 100% !important;
     }
-    .inventory-row-container [data-testid="stHorizontalBlock"] {
+    
+    /* 어떤 화면 크기에서도 무조건 가로 한 줄 유지 (세로로 떨어짐 방지) */
+    .inventory-row-container div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
@@ -64,7 +66,8 @@ st.markdown("""
         margin: 0 !important;
         padding: 0 !important;
     }
-    .inventory-row-container [data-testid="column"] {
+    
+    .inventory-row-container div[data-testid="column"] {
         flex: 1 1 0 !important;
         min-width: 0 !important;
         max-width: none !important;
@@ -81,8 +84,8 @@ st.markdown("""
         width: 100% !important;
     }
     
-    /* 톱니바퀴 버튼 스타일 정밀 정리 */
-    .inventory-row-container [data-testid="column"] button {
+    /* 톱니바퀴 버튼 테두리 및 박스 흔적 완전 제거 */
+    .inventory-row-container button {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
@@ -93,14 +96,15 @@ st.markdown("""
         height: auto !important;
         line-height: 1 !important;
     }
-    .inventory-row-container [data-testid="column"] button:hover {
+    .inventory-row-container button:hover {
         background-color: rgba(0, 0, 0, 0.05) !important;
+        border: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("갤럭시 Z 폴드 6의 접힘 및 펼침 화면 모두에 완벽하게 대응하는 스마트 냉장고입니다.")
+st.write("스마트폰 화면에서도 박스 없이 완벽하게 한 줄로 정렬되는 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -286,7 +290,7 @@ else:
                             for sheet_row_idx, current_ing, clean_date_str, days_label, current_cat in cat_items:
                                 short_date = clean_date_str[5:] if len(clean_date_str) >= 10 else clean_date_str
                                 
-                                # .inventory-row-container 클래스로 감싸서 박스 생성 없이 오직 해당 목록 줄만 완벽하게 한 줄 고정
+                                # 인라인 컨테이너로 감싸서 오직 해당 목록 줄만 박스 없이 가로 한 줄로 고정
                                 st.markdown("<div class='inventory-row-container'>", unsafe_allow_html=True)
                                 r_c1, r_c2, r_c3, r_c4 = st.columns([3.2, 1.4, 1.2, 0.6])
                                 
