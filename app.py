@@ -29,7 +29,7 @@ def parse_sheet_date(date_val):
     except Exception:
         return date_str[:10]
 
-# 상하 간격 극대화 축소 및 수평 정렬을 위한 정밀 CSS
+# 톱니바퀴 아이콘 완벽 수평 정렬을 위한 정밀 CSS
 st.markdown("""
     <style>
     /* 1. 전체 컨테이너 여백 최적화 및 가로 스크롤 방지 */
@@ -64,7 +64,11 @@ st.markdown("""
         align-items: center !important;
     }
     
-    /* 3. 품목 관리 톱니바퀴 버튼 스타일 재정의 (흐리고 세련된 아이콘) */
+    /* 3. 품목 관리 톱니바퀴 버튼 완벽 수평 정렬 및 스타일 재정의 */
+    div[data-testid="column"]:has(button[title="품목 관리"]) {
+        justify-content: center !important;
+        align-items: center !important;
+    }
     button[title="품목 관리"] {
         background-color: transparent !important;
         border: none !important;
@@ -72,11 +76,12 @@ st.markdown("""
         padding: 0px !important;
         margin: 0px !important;
         min-height: unset !important;
-        height: 28px !important;
+        height: auto !important;
         width: 100% !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        transform: translateY(2px) !important; /* 텍스트와 높낮이 완벽 일치를 위한 미세 조정 */
     }
     button[title="품목 관리"] p, 
     button[title="품목 관리"] span,
@@ -114,7 +119,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍳 쑥잠이 냉장고")
-st.write("상하 간격이 슬림하게 줄어든 스마트 냉장고입니다.")
+st.write("톱니바퀴 수평 정렬이 완벽하게 맞춰진 스마트 냉장고입니다.")
 
 # st.secrets에서 기본값 불러오기
 default_gas_url = ""
@@ -310,7 +315,7 @@ else:
                                         </div>
                                     """, unsafe_allow_html=True)
                                     
-                                # 오른쪽 컬럼: 세련되고 흐린 톱니바퀴 버튼 배치
+                                # 오른쪽 컬럼: 수평 정렬 및 미세 조정된 톱니바퀴 버튼 배치
                                 with c_btn:
                                     if st.button("⚙️", key=f"gear_{sheet_row_idx}", help="품목 관리", type="tertiary"):
                                         open_edit_dialog(sheet_row_idx, current_ing, clean_date_str, current_cat, web_app_url)
